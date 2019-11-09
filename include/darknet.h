@@ -805,18 +805,18 @@ typedef struct box_label {
 } box_label;
 
 // list.h
-//typedef struct node {
-//    void *val;
-//    struct node *next;
-//    struct node *prev;
-//} node;
+typedef struct node {
+   void *val;
+   struct node *next;
+   struct node *prev;
+} node;
 
 // list.h
-//typedef struct list {
-//    int size;
-//    node *front;
-//    node *back;
-//} list;
+typedef struct list {
+   int size;
+   node *front;
+   node *back;
+} list;
 
 // -----------------------------------------------------
 
