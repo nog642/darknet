@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+
 box float_to_box(float *f)
 {
     box b;
@@ -13,7 +14,8 @@ box float_to_box(float *f)
     return b;
 }
 
-box float_to_box_stride(float *f, int stride)
+
+box float_to_box_stride(float* f, int stride)
 {
     box b = { 0 };
     b.x = f[0];
@@ -23,6 +25,7 @@ box float_to_box_stride(float *f, int stride)
     return b;
 }
 
+
 dbox derivative(box a, box b)
 {
     dbox d;
@@ -30,13 +33,13 @@ dbox derivative(box a, box b)
     d.dw = 0;
     float l1 = a.x - a.w/2;
     float l2 = b.x - b.w/2;
-    if (l1 > l2){
+    if (l1 > l2) {
         d.dx -= 1;
         d.dw += .5;
     }
     float r1 = a.x + a.w/2;
     float r2 = b.x + b.w/2;
-    if(r1 < r2){
+    if (r1 < r2) {
         d.dx += 1;
         d.dw += .5;
     }
@@ -44,7 +47,7 @@ dbox derivative(box a, box b)
         d.dx = -1;
         d.dw = 0;
     }
-    if (r1 < l2){
+    if (r1 < l2) {
         d.dx = 1;
         d.dw = 0;
     }
@@ -53,13 +56,13 @@ dbox derivative(box a, box b)
     d.dh = 0;
     float t1 = a.y - a.h/2;
     float t2 = b.y - b.h/2;
-    if (t1 > t2){
+    if (t1 > t2) {
         d.dy -= 1;
         d.dh += .5;
     }
     float b1 = a.y + a.h/2;
     float b2 = b.y + b.h/2;
-    if(b1 < b2){
+    if (b1 < b2) {
         d.dy += 1;
         d.dh += .5;
     }
@@ -67,12 +70,13 @@ dbox derivative(box a, box b)
         d.dy = -1;
         d.dh = 0;
     }
-    if (b1 < t2){
+    if (b1 < t2) {
         d.dy = 1;
         d.dh = 0;
     }
     return d;
 }
+
 
 // where c is the smallest box that fully encompases a and b
 boxabs box_c(box a, box b) {
@@ -83,6 +87,7 @@ boxabs box_c(box a, box b) {
     ba.right = fmax(a.x + a.w / 2, b.x + b.w / 2);
     return ba;
 }
+
 
 // representation from x, y, w, h to top, left, bottom, right
 boxabs to_tblr(box a) {
@@ -98,32 +103,38 @@ boxabs to_tblr(box a) {
     return tblr;
 }
 
+
 float overlap(float x1, float w1, float x2, float w2)
 {
-    float l1 = x1 - w1/2;
-    float l2 = x2 - w2/2;
+    float l1 = x1 - w1 / 2;
+    float l2 = x2 - w2 / 2;
     float left = l1 > l2 ? l1 : l2;
-    float r1 = x1 + w1/2;
-    float r2 = x2 + w2/2;
+    float r1 = x1 + w1 / 2;
+    float r2 = x2 + w2 / 2;
     float right = r1 < r2 ? r1 : r2;
     return right - left;
 }
+
 
 float box_intersection(box a, box b)
 {
     float w = overlap(a.x, a.w, b.x, b.w);
     float h = overlap(a.y, a.h, b.y, b.h);
-    if(w < 0 || h < 0) return 0;
-    float area = w*h;
+    if (w < 0 || h < 0) {
+        return 0;
+    }
+    float area = w * h;
     return area;
 }
+
 
 float box_union(box a, box b)
 {
     float i = box_intersection(a, b);
-    float u = a.w*a.h + b.w*b.h - i;
+    float u = a.w * a.h + b.w * b.h - i;
     return u;
 }
+
 
 float box_iou(box a, box b)
 {
@@ -137,12 +148,13 @@ float box_iou(box a, box b)
     return I / U;
 }
 
+
 float box_giou(box a, box b)
 {
     boxabs ba = box_c(a, b);
     float w = ba.right - ba.left;
     float h = ba.bot - ba.top;
-    float c = w*h;
+    float c = w * h;
     float iou = box_iou(a, b);
     if (c == 0) {
         return iou;
@@ -154,6 +166,7 @@ float box_giou(box a, box b)
 #endif
     return iou - giou_term;
 }
+
 
 dxrep dx_box_iou(box pred, box truth, IOU_LOSS iou_loss) {
     boxabs pred_tblr = to_tblr(pred);
@@ -168,8 +181,8 @@ dxrep dx_box_iou(box pred, box truth, IOU_LOSS iou_loss) {
     printf("pred: x,y,w,h: (%f, %f, %f, %f) -> t,b,l,r: (%f, %f, %f, %f)\n", pred.x, pred.y, pred.w, pred.h, pred_tblr.top, pred_tblr.bot, pred_tblr.left, pred_tblr.right);
     printf("truth: x,y,w,h: (%f, %f, %f, %f) -> t,b,l,r: (%f, %f, %f, %f)\n", truth.x, truth.y, truth.w, truth.h, truth_tblr.top, truth_tblr.bot, truth_tblr.left, truth_tblr.right);
 #endif
-    //printf("pred (t,b,l,r): (%f, %f, %f, %f)\n", pred_t, pred_b, pred_l, pred_r);
-    //printf("trut (t,b,l,r): (%f, %f, %f, %f)\n", truth_tblr.top, truth_tblr.bot, truth_tblr.left, truth_tblr.right);
+    // printf("pred (t,b,l,r): (%f, %f, %f, %f)\n", pred_t, pred_b, pred_l, pred_r);
+    // printf("trut (t,b,l,r): (%f, %f, %f, %f)\n", truth_tblr.top, truth_tblr.bot, truth_tblr.left, truth_tblr.right);
     dxrep dx = { 0 };
     float X = (pred_b - pred_t) * (pred_r - pred_l);
     float Xhat = (truth_tblr.bot - truth_tblr.top) * (truth_tblr.right - truth_tblr.left);
@@ -238,6 +251,7 @@ dxrep dx_box_iou(box pred, box truth, IOU_LOSS iou_loss) {
     return dx;
 }
 
+
 float box_rmse(box a, box b)
 {
     return sqrt(pow(a.x-b.x, 2) +
@@ -245,6 +259,7 @@ float box_rmse(box a, box b)
                 pow(a.w-b.w, 2) +
                 pow(a.h-b.h, 2));
 }
+
 
 dbox dintersect(box a, box b)
 {
@@ -260,6 +275,7 @@ dbox dintersect(box a, box b)
 
     return di;
 }
+
 
 dbox dunion(box a, box b)
 {
@@ -278,10 +294,10 @@ dbox dunion(box a, box b)
 void test_dunion()
 {
     box a = {0, 0, 1, 1};
-    box dxa= {0+.0001, 0, 1, 1};
-    box dya= {0, 0+.0001, 1, 1};
-    box dwa= {0, 0, 1+.0001, 1};
-    box dha= {0, 0, 1, 1+.0001};
+    box dxa = {0+.0001, 0, 1, 1};
+    box dya = {0, 0+.0001, 1, 1};
+    box dwa = {0, 0, 1+.0001, 1};
+    box dha = {0, 0, 1, 1+.0001};
 
     box b = {.5, .5, .2, .2};
     dbox di = dunion(a,b);
@@ -291,49 +307,52 @@ void test_dunion()
     float yinter = box_union(dya, b);
     float winter = box_union(dwa, b);
     float hinter = box_union(dha, b);
-    xinter = (xinter - inter)/(.0001);
-    yinter = (yinter - inter)/(.0001);
-    winter = (winter - inter)/(.0001);
-    hinter = (hinter - inter)/(.0001);
+    xinter = (xinter - inter) / (.0001);
+    yinter = (yinter - inter) / (.0001);
+    winter = (winter - inter) / (.0001);
+    hinter = (hinter - inter) / (.0001);
     printf("Union Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
 }
+
+
 void test_dintersect()
 {
     box a = {0, 0, 1, 1};
-    box dxa= {0+.0001, 0, 1, 1};
-    box dya= {0, 0+.0001, 1, 1};
-    box dwa= {0, 0, 1+.0001, 1};
-    box dha= {0, 0, 1, 1+.0001};
+    box dxa = {0 + .0001, 0, 1, 1};
+    box dya = {0, 0 + .0001, 1, 1};
+    box dwa = {0, 0, 1 + .0001, 1};
+    box dha = {0, 0, 1, 1 + .0001};
 
     box b = {.5, .5, .2, .2};
-    dbox di = dintersect(a,b);
+    dbox di = dintersect(a, b);
     printf("Inter: %f %f %f %f\n", di.dx, di.dy, di.dw, di.dh);
     float inter =  box_intersection(a, b);
     float xinter = box_intersection(dxa, b);
     float yinter = box_intersection(dya, b);
     float winter = box_intersection(dwa, b);
     float hinter = box_intersection(dha, b);
-    xinter = (xinter - inter)/(.0001);
-    yinter = (yinter - inter)/(.0001);
-    winter = (winter - inter)/(.0001);
-    hinter = (hinter - inter)/(.0001);
+    xinter = (xinter - inter) / (.0001);
+    yinter = (yinter - inter) / (.0001);
+    winter = (winter - inter) / (.0001);
+    hinter = (hinter - inter) / (.0001);
     printf("Inter Manual %f %f %f %f\n", xinter, yinter, winter, hinter);
 }
+
 
 void test_box()
 {
     test_dintersect();
     test_dunion();
     box a = {0, 0, 1, 1};
-    box dxa= {0+.00001, 0, 1, 1};
-    box dya= {0, 0+.00001, 1, 1};
-    box dwa= {0, 0, 1+.00001, 1};
-    box dha= {0, 0, 1, 1+.00001};
+    box dxa = {0 + .00001, 0, 1, 1};
+    box dya = {0, 0 + .00001, 1, 1};
+    box dwa = {0, 0, 1 + .00001, 1};
+    box dha = {0, 0, 1, 1 + .00001};
 
     box b = {.5, 0, .2, .2};
 
     float iou = box_iou(a,b);
-    iou = (1-iou)*(1-iou);
+    iou = (1 - iou) * (1 - iou);
     printf("%f\n", iou);
     dbox d = diou(a, b);
     printf("%f %f %f %f\n", d.dx, d.dy, d.dw, d.dh);
@@ -342,20 +361,21 @@ void test_box()
     float yiou = box_iou(dya, b);
     float wiou = box_iou(dwa, b);
     float hiou = box_iou(dha, b);
-    xiou = ((1-xiou)*(1-xiou) - iou)/(.00001);
-    yiou = ((1-yiou)*(1-yiou) - iou)/(.00001);
-    wiou = ((1-wiou)*(1-wiou) - iou)/(.00001);
-    hiou = ((1-hiou)*(1-hiou) - iou)/(.00001);
+    xiou = ((1 - xiou) * (1 - xiou) - iou) / (.00001);
+    yiou = ((1 - yiou) * (1 - yiou) - iou) / (.00001);
+    wiou = ((1 - wiou) * (1 - wiou) - iou) / (.00001);
+    hiou = ((1 - hiou) * (1 - hiou) - iou) / (.00001);
     printf("manual %f %f %f %f\n", xiou, yiou, wiou, hiou);
 }
 
+
 dbox diou(box a, box b)
 {
-    float u = box_union(a,b);
-    float i = box_intersection(a,b);
-    dbox di = dintersect(a,b);
-    dbox du = dunion(a,b);
-    dbox dd = {0,0,0,0};
+    float u = box_union(a, b);
+    float i = box_intersection(a, b);
+    dbox di = dintersect(a, b);
+    dbox du = dunion(a, b);
+    dbox dd = {0, 0, 0, 0};
 
     if(i <= 0 || 1) {
         dd.dx = b.x - a.x;
@@ -365,49 +385,59 @@ dbox diou(box a, box b)
         return dd;
     }
 
-    dd.dx = 2*pow((1-(i/u)),1)*(di.dx*u - du.dx*i)/(u*u);
-    dd.dy = 2*pow((1-(i/u)),1)*(di.dy*u - du.dy*i)/(u*u);
-    dd.dw = 2*pow((1-(i/u)),1)*(di.dw*u - du.dw*i)/(u*u);
-    dd.dh = 2*pow((1-(i/u)),1)*(di.dh*u - du.dh*i)/(u*u);
+    dd.dx = 2 * pow((1 - (i / u)), 1) * (di.dx * u - du.dx * i) / (u * u);
+    dd.dy = 2 * pow((1 - (i / u)), 1) * (di.dy * u - du.dy * i) / (u * u);
+    dd.dw = 2 * pow((1 - (i / u)), 1) * (di.dw * u - du.dw * i) / (u * u);
+    dd.dh = 2 * pow((1 - (i / u)), 1) * (di.dh * u - du.dh * i) / (u * u);
     return dd;
 }
+
 
 typedef struct{
     int index;
     int class_id;
-    float **probs;
+    float** probs;
 } sortable_bbox;
 
-int nms_comparator(const void *pa, const void *pb)
+
+int nms_comparator(const void* pa, const void* pb)
 {
-    sortable_bbox a = *(sortable_bbox *)pa;
-    sortable_bbox b = *(sortable_bbox *)pb;
+    sortable_bbox a = *(sortable_bbox*)pa;
+    sortable_bbox b = *(sortable_bbox*)pb;
     float diff = a.probs[a.index][b.class_id] - b.probs[b.index][b.class_id];
-    if(diff < 0) return 1;
-    else if(diff > 0) return -1;
+    if (diff < 0) {
+        return 1;
+    } else if(diff > 0) {
+        return -1;
+    }
     return 0;
 }
 
-void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thresh)
+
+void do_nms_sort_v2(box* boxes, float** probs, int total, int classes, float thresh)
 {
-    int i, j, k;
+    int i;
+    int j;
+    int k;
     sortable_bbox* s = (sortable_bbox*)calloc(total, sizeof(sortable_bbox));
 
-    for(i = 0; i < total; ++i){
+    for (i = 0; i < total; ++i) {
         s[i].index = i;
         s[i].class_id = 0;
         s[i].probs = probs;
     }
 
-    for(k = 0; k < classes; ++k){
-        for(i = 0; i < total; ++i){
+    for (k = 0; k < classes; ++k) {
+        for (i = 0; i < total; ++i) {
             s[i].class_id = k;
         }
         qsort(s, total, sizeof(sortable_bbox), nms_comparator);
         for(i = 0; i < total; ++i){
-            if(probs[s[i].index][k] == 0) continue;
+            if (probs[s[i].index][k] == 0) {
+                continue;
+            }
             box a = boxes[s[i].index];
-            for(j = i+1; j < total; ++j){
+            for (j = i + 1; j < total; ++j) {
                 box b = boxes[s[j].index];
                 if (box_iou(a, b) > thresh){
                     probs[s[j].index][k] = 0;
@@ -418,10 +448,11 @@ void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thr
     free(s);
 }
 
-int nms_comparator_v3(const void *pa, const void *pb)
+
+int nms_comparator_v3(const void* pa, const void* pb)
 {
-    detection a = *(detection *)pa;
-    detection b = *(detection *)pb;
+    detection a = *(detection*)pa;
+    detection b = *(detection*)pb;
     float diff = 0;
     if (b.sort_class >= 0) {
         diff = a.prob[b.sort_class] - b.prob[b.sort_class];
@@ -429,14 +460,20 @@ int nms_comparator_v3(const void *pa, const void *pb)
     else {
         diff = a.objectness - b.objectness;
     }
-    if (diff < 0) return 1;
-    else if (diff > 0) return -1;
+    if (diff < 0) {
+        return 1;
+    } else if (diff > 0) {
+        return -1;
+    }
     return 0;
 }
 
-void do_nms_obj(detection *dets, int total, int classes, float thresh)
+
+void do_nms_obj(detection* dets, int total, int classes, float thresh)
 {
-    int i, j, k;
+    int i;
+    int j;
+    int k;
     k = total - 1;
     for (i = 0; i <= k; ++i) {
         if (dets[i].objectness == 0) {
@@ -470,9 +507,12 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh)
     }
 }
 
-void do_nms_sort(detection *dets, int total, int classes, float thresh)
+
+void do_nms_sort(detection* dets, int total, int classes, float thresh)
 {
-    int i, j, k;
+    int i;
+    int j;
+    int k;
     k = total - 1;
     for (i = 0; i <= k; ++i) {
         if (dets[i].objectness == 0) {
@@ -491,7 +531,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
         }
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
         for (i = 0; i < total; ++i) {
-            //printf("  k = %d, \t i = %d \n", k, i);
+            // printf("  k = %d, \t i = %d \n", k, i);
             if (dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for (j = i + 1; j < total; ++j) {
@@ -504,25 +544,34 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
     }
 }
 
-void do_nms(box *boxes, float **probs, int total, int classes, float thresh)
+
+void do_nms(box* boxes, float** probs, int total, int classes, float thresh)
 {
-    int i, j, k;
-    for(i = 0; i < total; ++i){
+    int i;
+    int j;
+    int k;
+    for (i = 0; i < total; ++i) {
         int any = 0;
-        for(k = 0; k < classes; ++k) any = any || (probs[i][k] > 0);
-        if(!any) {
+        for (k = 0; k < classes; ++k) {
+            any = any || (probs[i][k] > 0);
+        }
+        if (!any) {
             continue;
         }
-        for(j = i+1; j < total; ++j){
-            if (box_iou(boxes[i], boxes[j]) > thresh){
-                for(k = 0; k < classes; ++k){
-                    if (probs[i][k] < probs[j][k]) probs[i][k] = 0;
-                    else probs[j][k] = 0;
+        for (j = i + 1; j < total; ++j) {
+            if (box_iou(boxes[i], boxes[j]) > thresh) {
+                for (k = 0; k < classes; ++k) {
+                    if (probs[i][k] < probs[j][k]) {
+                        probs[i][k] = 0;
+                    } else {
+                        probs[j][k] = 0;
+                    }
                 }
             }
         }
     }
 }
+
 
 box encode_box(box b, box anchor)
 {
@@ -533,6 +582,7 @@ box encode_box(box b, box anchor)
     encode.h = log2(b.h / anchor.h);
     return encode;
 }
+
 
 box decode_box(box b, box anchor)
 {

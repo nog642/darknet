@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *get_activation_string(ACTIVATION a)
+
+char* get_activation_string(ACTIVATION a)
 {
-    switch(a){
+    switch (a) {
         case LOGISTIC:
             return "logistic";
         case LOGGY:
@@ -42,31 +43,65 @@ char *get_activation_string(ACTIVATION a)
     return "relu";
 }
 
-ACTIVATION get_activation(char *s)
+
+ACTIVATION get_activation(char* s)
 {
-    if (strcmp(s, "logistic")==0) return LOGISTIC;
-    if (strcmp(s, "swish") == 0) return SWISH;
-    if (strcmp(s, "mish") == 0) return MISH;
-    if (strcmp(s, "loggy")==0) return LOGGY;
-    if (strcmp(s, "relu")==0) return RELU;
-    if (strcmp(s, "elu")==0) return ELU;
-    if (strcmp(s, "selu") == 0) return SELU;
-    if (strcmp(s, "relie")==0) return RELIE;
-    if (strcmp(s, "plse")==0) return PLSE;
-    if (strcmp(s, "hardtan")==0) return HARDTAN;
-    if (strcmp(s, "lhtan")==0) return LHTAN;
-    if (strcmp(s, "linear")==0) return LINEAR;
-    if (strcmp(s, "ramp")==0) return RAMP;
-    if (strcmp(s, "leaky")==0) return LEAKY;
-    if (strcmp(s, "tanh")==0) return TANH;
-    if (strcmp(s, "stair")==0) return STAIR;
+    if (strcmp(s, "logistic") == 0) {
+        return LOGISTIC;
+    }
+    if (strcmp(s, "swish") == 0) {
+        return SWISH;
+    }
+    if (strcmp(s, "mish") == 0) {
+        return MISH;
+    }
+    if (strcmp(s, "loggy") == 0) {
+        return LOGGY;
+    }
+    if (strcmp(s, "relu") == 0) {
+        return RELU;
+    }
+    if (strcmp(s, "elu") == 0) {
+        return ELU;
+    }
+    if (strcmp(s, "selu") == 0) {
+        return SELU;
+    }
+    if (strcmp(s, "relie") == 0) {
+        return RELIE;
+    }
+    if (strcmp(s, "plse") == 0) {
+        return PLSE;
+    }
+    if (strcmp(s, "hardtan") == 0) {
+        return HARDTAN;
+    }
+    if (strcmp(s, "lhtan") == 0) {
+        return LHTAN;
+    }
+    if (strcmp(s, "linear") == 0) {
+        return LINEAR;
+    }
+    if (strcmp(s, "ramp") == 0) {
+        return RAMP;
+    }
+    if (strcmp(s, "leaky") == 0) {
+        return LEAKY;
+    }
+    if (strcmp(s, "tanh") == 0) {
+        return TANH;
+    }
+    if (strcmp(s, "stair") == 0) {
+        return STAIR;
+    }
     fprintf(stderr, "Couldn't find activation function %s, going with ReLU\n", s);
     return RELU;
 }
 
+
 float activate(float x, ACTIVATION a)
 {
-    switch(a){
+    switch (a) {
         case LINEAR:
             return linear_activate(x);
         case LOGISTIC:
@@ -99,30 +134,33 @@ float activate(float x, ACTIVATION a)
     return 0;
 }
 
-void activate_array(float *x, const int n, const ACTIVATION a)
+
+void activate_array(float* x, const int n, const ACTIVATION a)
 {
     int i;
-    if (a == LINEAR) {}
-    else if (a == LEAKY) {
+    if (a == LINEAR) {
+
+    } else if (a == LEAKY) {
         #pragma omp parallel for
         for (i = 0; i < n; ++i) {
             x[i] = leaky_activate(x[i]);
         }
-    }
-    else if (a == LOGISTIC) {
+
+    } else if (a == LOGISTIC) {
         #pragma omp parallel for
         for (i = 0; i < n; ++i) {
             x[i] = logistic_activate(x[i]);
         }
-    }
-    else {
+
+    } else {
         for (i = 0; i < n; ++i) {
             x[i] = activate(x[i], a);
         }
     }
 }
 
-void activate_array_swish(float *x, const int n, float * output_sigmoid, float * output)
+
+void activate_array_swish(float* x, const int n, float* output_sigmoid, float* output)
 {
     int i;
     #pragma omp parallel for
@@ -134,8 +172,9 @@ void activate_array_swish(float *x, const int n, float * output_sigmoid, float *
     }
 }
 
+
 // https://github.com/digantamisra98/Mish
-void activate_array_mish(float *x, const int n, float * activation_input, float * output)
+void activate_array_mish(float* x, const int n, float* activation_input, float* output)
 {
     int i;
     #pragma omp parallel for
@@ -146,9 +185,10 @@ void activate_array_mish(float *x, const int n, float * activation_input, float 
     }
 }
 
+
 float gradient(float x, ACTIVATION a)
 {
-    switch(a){
+    switch (a) {
         case LINEAR:
             return linear_gradient(x);
         case LOGISTIC:
@@ -181,7 +221,8 @@ float gradient(float x, ACTIVATION a)
     return 0;
 }
 
-void gradient_array(const float *x, const int n, const ACTIVATION a, float *delta)
+
+void gradient_array(const float* x, const int n, const ACTIVATION a, float* delta)
 {
     int i;
     #pragma omp parallel for
@@ -190,26 +231,28 @@ void gradient_array(const float *x, const int n, const ACTIVATION a, float *delt
     }
 }
 
+
 // https://github.com/BVLC/caffe/blob/04ab089db018a292ae48d51732dd6c66766b36b6/src/caffe/layers/swish_layer.cpp#L54-L56
-void gradient_array_swish(const float *x, const int n, const float * sigmoid, float * delta)
+void gradient_array_swish(const float* x, const int n, const float* sigmoid, float* delta)
 {
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; ++i) {
         float swish = x[i];
-        delta[i] *= swish + sigmoid[i]*(1 - swish);
+        delta[i] *= swish + sigmoid[i] * (1 - swish);
     }
 }
 
+
 // https://github.com/digantamisra98/Mish
-void gradient_array_mish(const int n, const float * activation_input, float * delta)
+void gradient_array_mish(const int n, const float* activation_input, float* delta)
 {
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; ++i) {
         float x = activation_input[i];
         float d = 2 * expf(x) + expf(2 * x) + 2;
-        float w = 4 * (x + 1) + 4 * expf(2 * x) + expf(3 * x) + expf(x)*(4 * x + 6);
+        float w = 4 * (x + 1) + 4 * expf(2 * x) + expf(3 * x) + expf(x) * (4 * x + 6);
         float derivative = expf(x) * w / (d * d);
         delta[i] *= derivative;
     }
