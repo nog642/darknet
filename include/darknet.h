@@ -110,10 +110,6 @@ typedef enum {
     IOU, GIOU, MSE
 } IOU_LOSS;
 
-// parser.c
-struct section;
-typedef struct section section;
-
 // image.h
 typedef enum{
     PNG, BMP, TGA, JPG
