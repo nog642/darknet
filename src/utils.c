@@ -321,17 +321,28 @@ list *split_str(char *s, char delim)
     return l;
 }
 
-void strip(char *s)
+
+/**
+ * Remove the whitespace in a string. All whitespace is removed, not just
+ *     leading and trailing whitespace. Whitespace means spaces, tabs, newlines,
+ *     and carriage returns.
+ * The string is modified in-place.
+ * @param s the string to strip
+ */
+void strip(char* s)
 {
     size_t i;
     size_t len = strlen(s);
     size_t offset = 0;
     for(i = 0; i < len; ++i){
         char c = s[i];
-        if(c==' '||c=='\t'||c=='\n'||c =='\r'||c==0x0d||c==0x0a) ++offset;
-        else s[i-offset] = c;
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+            ++offset;
+        } else {
+            s[i - offset] = c;
+        }
     }
-    s[len-offset] = '\0';
+    s[len - offset] = '\0';
 }
 
 
