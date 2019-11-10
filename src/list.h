@@ -3,16 +3,16 @@
 
 
 typedef struct node{
-    void *val;
-    struct node *next;
-    struct node *prev;
+    void* val;
+    struct node* next;
+    struct node* prev;
 } node;
 
 
 typedef struct list{
     int size;
-    node *front;
-    node *back;
+    node* front;
+    node* back;
 } list;
 
 

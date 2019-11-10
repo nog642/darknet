@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "data.h"
 
+
 list *read_data_cfg(char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -32,6 +33,7 @@ list *read_data_cfg(char *filename)
     fclose(file);
     return options;
 }
+
 
 metadata get_metadata(char *file)
 {
@@ -83,6 +85,7 @@ void option_insert(list* l, char* key, char *val)
     list_insert(l, p);
 }
 
+
 void option_unused(list *l)
 {
     node *n = l->front;
@@ -94,6 +97,7 @@ void option_unused(list *l)
         n = n->next;
     }
 }
+
 
 char *option_find(list *l, char *key)
 {
@@ -108,6 +112,8 @@ char *option_find(list *l, char *key)
     }
     return 0;
 }
+
+
 char *option_find_str(list *l, char *key, char *def)
 {
     char *v = option_find(l, key);
@@ -116,12 +122,14 @@ char *option_find_str(list *l, char *key, char *def)
     return def;
 }
 
+
 char *option_find_str_quiet(list *l, char *key, char *def)
 {
     char *v = option_find(l, key);
     if (v) return v;
     return def;
 }
+
 
 int option_find_int(list *l, char *key, int def)
 {

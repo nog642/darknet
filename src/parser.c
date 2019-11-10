@@ -40,7 +40,7 @@
 #include "yolo_layer.h"
 #include "gaussian_yolo_layer.h"
 
-typedef struct{
+typedef struct section {
     char* type;
     list* options;
 } section;
