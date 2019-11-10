@@ -40,11 +40,6 @@
 #include "yolo_layer.h"
 #include "gaussian_yolo_layer.h"
 
-typedef struct section {
-    char* type;
-    list* options;
-} section;
-
 list* read_cfg(char* filename);
 
 

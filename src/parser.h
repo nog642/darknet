@@ -5,6 +5,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct section {
+    char* type;
+    list* options;
+} section;
+
 network parse_network_cfg(char *filename);
 network parse_network_cfg_custom(char *filename, int batch, int time_steps);
 void save_network(network net, char *filename);
