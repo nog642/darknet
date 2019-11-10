@@ -41,13 +41,14 @@
 #include "gaussian_yolo_layer.h"
 
 typedef struct{
-    char *type;
-    list *options;
-}section;
+    char* type;
+    list* options;
+} section;
 
-list *read_cfg(char *filename);
+list* read_cfg(char* filename);
 
-LAYER_TYPE string_to_layer_type(char * type)
+
+LAYER_TYPE string_to_layer_type(char* type)
 {
 
     if (strcmp(type, "[shortcut]")==0) return SHORTCUT;
