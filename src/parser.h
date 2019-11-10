@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-typedef struct section {
+typedef struct {
     char* type;
     list* options;
 } section;
