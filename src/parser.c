@@ -1142,18 +1142,20 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
 
 
-list *read_cfg(char *filename)
+list* read_cfg(char* filename)
 {
-    FILE *file = fopen(filename, "r");
-    if(file == 0) file_error(filename);
-    char *line;
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        file_error(filename);
+    }
+    char* line;
     int nu = 0;
-    list *sections = make_list();
-    section *current = 0;
-    while((line=fgetl(file)) != 0){
-        ++ nu;
+    list* sections = make_list();
+    section* current = 0;
+    while ((line = fgetl(file)) != 0) {
+        nu++;
         strip(line);
-        switch(line[0]){
+        switch (line[0]) {
             case '[':
                 current = (section*)malloc(sizeof(section));
                 list_insert(sections, current);
@@ -1166,7 +1168,7 @@ list *read_cfg(char *filename)
                 free(line);
                 break;
             default:
-                if(!read_option(line, current->options)){
+                if (!read_option(line, current->options)) {
                     fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
                     free(line);
                 }
@@ -1176,6 +1178,7 @@ list *read_cfg(char *filename)
     fclose(file);
     return sections;
 }
+
 
 void save_convolutional_weights_binary(layer l, FILE *fp)
 {
