@@ -806,20 +806,19 @@ typedef struct box_label {
 
 // list.h
 typedef struct node node;
-
-// list.h
 typedef struct list list;
 
 // -----------------------------------------------------
 
 
 // parser.c
-LIB_API network *load_network(char *cfg, char *weights, int clear);
-LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
-LIB_API network *load_network(char *cfg, char *weights, int clear);
+LIB_API network* load_network(char* cfg, char* weights, int clear);
+LIB_API network* load_network_custom(char* cfg, char* weights, int clear, int batch);
+LIB_API network* load_network(char* cfg, char* weights, int clear);
+list* read_cfg(char* filename);
 
 // network.c
-LIB_API load_args get_base_args(network *net);
+LIB_API load_args get_base_args(network* net);
 
 // box.h
 LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);

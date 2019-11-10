@@ -52,25 +52,29 @@ metadata get_metadata(char *file)
     return m;
 }
 
-int read_option(char *s, list *options)
+
+int read_option(char* s, list* options)
 {
     size_t i;
     size_t len = strlen(s);
-    char *val = 0;
+    char* val;
     for(i = 0; i < len; ++i){
         if(s[i] == '='){
             s[i] = '\0';
-            val = s+i+1;
+            val = s + i + 1;
             break;
         }
     }
-    if(i == len-1) return 0;
-    char *key = s;
+    if (i == len - 1) {
+        return 0;
+    }
+    char* key = s;
     option_insert(options, key, val);
     return 1;
 }
 
-void option_insert(list *l, char *key, char *val)
+
+void option_insert(list* l, char* key, char *val)
 {
     kvp* p = (kvp*)malloc(sizeof(kvp));
     p->key = key;
