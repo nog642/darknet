@@ -368,40 +368,52 @@ void free_ptrs(void **ptrs, int n)
     free(ptrs);
 }
 
-char *fgetl(FILE *fp)
+
+char* fgetl(FILE* fp)
 {
-    if(feof(fp)) return 0;
+    if (feof(fp)) {
+        return 0;
+    }
     size_t size = 512;
     char* line = (char*)malloc(size * sizeof(char));
-    if(!fgets(line, size, fp)){
+    if (!fgets(line, size, fp)) {
         free(line);
         return 0;
     }
 
     size_t curr = strlen(line);
 
-    while((line[curr-1] != '\n') && !feof(fp)){
-        if(curr == size-1){
+    while ((line[curr - 1] != '\n') && !feof(fp)) {
+        if (curr == size - 1) {
             size *= 2;
             line = (char*)realloc(line, size * sizeof(char));
-            if(!line) {
+            if (!line) {
                 printf("%ld\n", size);
                 malloc_error();
             }
         }
-        size_t readsize = size-curr;
-        if(readsize > INT_MAX) readsize = INT_MAX-1;
+        size_t readsize = size - curr;
+        if (readsize > INT_MAX) {
+            readsize = INT_MAX - 1;
+        }
         fgets(&line[curr], readsize, fp);
         curr = strlen(line);
     }
-    if(curr >= 2)
-        if(line[curr-2] == 0x0d) line[curr-2] = 0x00;
+    if (curr >= 2) {
+        if (line[curr - 2] == 0x0d) {
+            line[curr - 2] = 0x00;
+        }
+    }
 
-    if(curr >= 1)
-        if(line[curr-1] == 0x0a) line[curr-1] = 0x00;
+    if (curr >= 1) {
+        if (line[curr - 1] == 0x0a) {
+            line[curr - 1] = 0x00;
+        }
+    }
 
     return line;
 }
+
 
 int read_int(int fd)
 {
