@@ -570,12 +570,12 @@ typedef enum {
 typedef struct network {
     int n;
     int batch;
-    uint64_t *seen;
-    int *t;
+    uint64_t* seen;
+    int* t;
     float epoch;
     int subdivisions;
-    layer *layers;
-    float *output;
+    layer* layers;
+    float* output;
     learning_rate_policy policy;
 
     float learning_rate;
@@ -593,9 +593,9 @@ typedef struct network {
     int max_batches;
     int num_boxes;
     int train_images_num;
-    float *seq_scales;
-    float *scales;
-    int   *steps;
+    float* seq_scales;
+    float* scales;
+    int* steps;
     int num_steps;
     int burn_in;
     int cudnn_half;
@@ -615,7 +615,7 @@ typedef struct network {
     float max_ratio;
     float min_ratio;
     int center;
-    int flip; // horizontal flip 50% probability augmentaiont for classifier training (default = 1)
+    int flip;  // horizontal flip 50% probability augmentaiont for classifier training (default = 1)
     int blur;
     int mixup;
     int letter_box;
@@ -633,33 +633,33 @@ typedef struct network {
     int try_fix_nan;
 
     int gpu_index;
-    tree *hierarchy;
+    tree* hierarchy;
 
-    float *input;
-    float *truth;
-    float *delta;
-    float *workspace;
+    float* input;
+    float* truth;
+    float* delta;
+    float* workspace;
     int train;
     int index;
-    float *cost;
+    float* cost;
     float clip;
 
 #ifdef GPU
-    //float *input_gpu;
-    //float *truth_gpu;
-    float *delta_gpu;
-    float *output_gpu;
+    // float* input_gpu;
+    // float* truth_gpu;
+    float* delta_gpu;
+    float* output_gpu;
 
-    float *input_state_gpu;
-    float *input_pinned_cpu;
+    float* input_state_gpu;
+    float* input_pinned_cpu;
     int input_pinned_cpu_flag;
 
-    float **input_gpu;
-    float **truth_gpu;
-    float **input16_gpu;
-    float **output16_gpu;
-    size_t *max_input16_size;
-    size_t *max_output16_size;
+    float** input_gpu;
+    float** truth_gpu;
+    float** input16_gpu;
+    float** output16_gpu;
+    size_t* max_input16_size;
+    size_t* max_output16_size;
     int wait_stream;
 #endif
 } network;
