@@ -892,6 +892,9 @@ char* detection_to_json(detection* dets, int nboxes, int classes, char** names, 
     const float thresh = 0.005;  // function get_network_boxes() has already filtred dets by actual threshold
 
     char* send_buf = calloc(1024, sizeof(char));
+    if (!send_buf) {
+        return 0;
+    }
     if (filename) {
         sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
     } else {
@@ -908,6 +911,9 @@ char* detection_to_json(detection* dets, int nboxes, int classes, char** names, 
                 }
                 class_id = j;
                 char* buf = calloc(2048, sizeof(char));
+                if (!buf) {
+                    return 0;
+                }
                 // sprintf(buf, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f}",
                 //         image_id, j, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
 
@@ -919,8 +925,10 @@ char* detection_to_json(detection* dets, int nboxes, int classes, char** names, 
                 int total_len = send_buf_len + buf_len + 100;
                 send_buf = realloc(send_buf, total_len * sizeof(char));
                 if (!send_buf) {
-                    return 0;
-                    // exit(-1);
+                    if (buf) {
+                        free(buf);
+                    }
+                    return 0;  // exit(-1);
                 }
                 strcat(send_buf, buf);
                 free(buf);

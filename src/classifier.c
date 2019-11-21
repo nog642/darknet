@@ -82,6 +82,7 @@ void train_classifier(char* datacfg, char* cfgfile, char* weightfile, int* gpus,
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
+    args.c = net.c;
     args.threads = 32;
     args.hierarchy = net.hierarchy;
 
@@ -1406,5 +1407,9 @@ void run_classifier(int argc, char** argv)
         validate_classifier_crop(data, cfg, weights);
     } else if (strcmp(argv[2], "validfull") == 0) {
         validate_classifier_full(data, cfg, weights);
+    }
+
+    if (gpus && gpu_list && ngpus > 1) {
+        free(gpus);
     }
 }
