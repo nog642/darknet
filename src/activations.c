@@ -130,41 +130,44 @@ float activate(float x, const ACTIVATION a)
             return hardtan_activate(x);
         case LHTAN:
             return lhtan_activate(x);
+        default:
+            break;
     }
     return 0;
 }
 
 
-void activate_array(float* x, const int n, const ACTIVATION a)
+void activate_array(float* const x, const int n, const ACTIVATION a)
 {
-    if (a == LINEAR) {
-
-    } else if (a == LEAKY) {
-        #pragma omp parallel for
-        for (int i = 0; i < n; ++i) {
-            x[i] = leaky_activate(x[i]);
-        }
-
-    } else if (a == LOGISTIC) {
-        #pragma omp parallel for
-        for (int i = 0; i < n; ++i) {
-            x[i] = logistic_activate(x[i]);
-        }
-
-    } else {
-        for (int i = 0; i < n; ++i) {
-            x[i] = activate(x[i], a);
-        }
+    switch (a) {
+        case LINEAR:
+            break;
+        case LEAKY:
+            #pragma omp parallel for
+            for (int i = 0; i < n; ++i) {
+                x[i] = leaky_activate(x[i]);
+            }
+            break;
+        case LOGISTIC:
+            #pragma omp parallel for
+            for (int i = 0; i < n; ++i) {
+                x[i] = logistic_activate(x[i]);
+            }
+            break;
+        default:
+            for (int i = 0; i < n; ++i) {
+                x[i] = activate(x[i], a);
+            }
     }
 }
 
 
-void activate_array_swish(float* x, const int n, float* output_sigmoid, float* output)
+void activate_array_swish(const float* const x, const int n, float* const output_sigmoid, float* const output)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        float x_val = x[i];
-        float sigmoid = logistic_activate(x_val);
+        const float x_val = x[i];
+        const float sigmoid = logistic_activate(x_val);
         output_sigmoid[i] = sigmoid;
         output[i] = x_val * sigmoid;
     }
@@ -172,13 +175,13 @@ void activate_array_swish(float* x, const int n, float* output_sigmoid, float* o
 
 
 // https://github.com/digantamisra98/Mish
-void activate_array_mish(float* x, const int n, float* activation_input, float* output)
+void activate_array_mish(const float* const x, const int n, float* const activation_input, float* const output)
 {
     const float MISH_THRESHOLD = 20;
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        float x_val = x[i];
-        activation_input[i] = x_val;    // store value before activation
+        const float x_val = x[i];
+        activation_input[i] = x_val;  // store value before activation
         // output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
         if (x_val < MISH_THRESHOLD) {
             output[i] = x_val * tanh_activate(log(expf(x_val)));
@@ -189,7 +192,7 @@ void activate_array_mish(float* x, const int n, float* activation_input, float* 
 }
 
 
-float gradient(float x, ACTIVATION a)
+float gradient(float x, const ACTIVATION a)
 {
     switch (a) {
         case LINEAR:
@@ -220,15 +223,17 @@ float gradient(float x, ACTIVATION a)
             return hardtan_gradient(x);
         case LHTAN:
             return lhtan_gradient(x);
+        default:
+            break;
     }
     return 0;
 }
 
 
-void gradient_array(const float* x, const int n, const ACTIVATION a, float* delta)
+void gradient_array(const float* const x, const int n, const ACTIVATION a, float* const delta)
 {
     #pragma omp parallel for
-    for(int i = 0; i < n; ++i){
+    for (int i = 0; i < n; ++i) {
         delta[i] *= gradient(x[i], a);
     }
 }

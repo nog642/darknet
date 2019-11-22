@@ -21,7 +21,7 @@ char *get_activation_string(const ACTIVATION a);
 
 float activate(float x, const ACTIVATION a);
 
-float gradient(float x, ACTIVATION a);
+float gradient(float x, const ACTIVATION a);
 
 void gradient_array(const float* x, const int n, const ACTIVATION a, float* delta);
 
@@ -29,11 +29,11 @@ void gradient_array_swish(const float* x, const int n, const float* sigmoid, flo
 
 void gradient_array_mish(const int n, const float* activation_input, float* delta);
 
-void activate_array(float* x, const int n, const ACTIVATION a);
+void activate_array(float* const x, const int n, const ACTIVATION a);
 
-void activate_array_swish(float* x, const int n, float* output_sigmoid, float* output);
+void activate_array_swish(const float* const x, const int n, float* const output_sigmoid, float* const output);
 
-void activate_array_mish(float* x, const int n, float* activation_input, float* output);
+void activate_array_mish(const float* const x, const int n, float* const activation_input, float* const output);
 
 #ifdef GPU
 

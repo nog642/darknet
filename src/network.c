@@ -808,7 +808,8 @@ detection* make_network_boxes(network* net, float thresh, int* num)
 }
 
 
-void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, float thresh, int* map, float hier, int relative, detection* dets, int letter)
+void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, float thresh, int* map, float hier,
+                                  int relative, detection* dets, int letter)
 {
     box* boxes = calloc(l.w * l.h * l.n, sizeof(box));
     float** probs = calloc(l.w * l.h * l.n, sizeof(float*));
@@ -833,7 +834,8 @@ void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, f
 }
 
 
-void fill_network_boxes(network* net, int w, int h, float thresh, float hier, int* map, int relative, detection* dets, int letter)
+void fill_network_boxes(network* net, int w, int h, float thresh, float hier, int* map, int relative, detection* dets,
+                        int letter)
 {
     int prev_classes = -1;
     for (int j = 0; j < net->n; ++j) {
@@ -854,7 +856,7 @@ void fill_network_boxes(network* net, int w, int h, float thresh, float hier, in
         }
         if (l.type == REGION) {
             custom_get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets, letter);
-            //get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
+            // get_region_detections(l, w, h, net->w, net->h, thresh, map, hier, relative, dets);
             dets += l.w * l.h * l.n;
         }
         if (l.type == DETECTION) {
@@ -865,7 +867,8 @@ void fill_network_boxes(network* net, int w, int h, float thresh, float hier, in
 }
 
 
-detection* get_network_boxes(network* net, int w, int h, float thresh, float hier, int* map, int relative, int* num, int letter)
+detection* get_network_boxes(network* net, int w, int h, float thresh, float hier, int* map, int relative, int* num,
+                             int letter)
 {
     detection* dets = make_network_boxes(net, thresh, num);
     fill_network_boxes(net, w, h, thresh, hier, map, relative, dets, letter);
