@@ -6,7 +6,7 @@
 #include <string.h>
 
 
-char* get_activation_string(ACTIVATION a)
+char* get_activation_string(const ACTIVATION a)
 {
     switch (a) {
         case LOGISTIC:
@@ -44,7 +44,7 @@ char* get_activation_string(ACTIVATION a)
 }
 
 
-ACTIVATION get_activation(char* s)
+ACTIVATION get_activation(const char* const s)
 {
     if (strcmp(s, "logistic") == 0) {
         return LOGISTIC;
@@ -99,7 +99,7 @@ ACTIVATION get_activation(char* s)
 }
 
 
-float activate(float x, ACTIVATION a)
+float activate(float x, const ACTIVATION a)
 {
     switch (a) {
         case LINEAR:
@@ -137,23 +137,22 @@ float activate(float x, ACTIVATION a)
 
 void activate_array(float* x, const int n, const ACTIVATION a)
 {
-    int i;
     if (a == LINEAR) {
 
     } else if (a == LEAKY) {
         #pragma omp parallel for
-        for (i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             x[i] = leaky_activate(x[i]);
         }
 
     } else if (a == LOGISTIC) {
         #pragma omp parallel for
-        for (i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             x[i] = logistic_activate(x[i]);
         }
 
     } else {
-        for (i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             x[i] = activate(x[i], a);
         }
     }
@@ -162,9 +161,8 @@ void activate_array(float* x, const int n, const ACTIVATION a)
 
 void activate_array_swish(float* x, const int n, float* output_sigmoid, float* output)
 {
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         float x_val = x[i];
         float sigmoid = logistic_activate(x_val);
         output_sigmoid[i] = sigmoid;
@@ -176,9 +174,8 @@ void activate_array_swish(float* x, const int n, float* output_sigmoid, float* o
 // https://github.com/digantamisra98/Mish
 void activate_array_mish(float* x, const int n, float* activation_input, float* output)
 {
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         float x_val = x[i];
         activation_input[i] = x_val;    // store value before activation
         output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
@@ -224,9 +221,8 @@ float gradient(float x, ACTIVATION a)
 
 void gradient_array(const float* x, const int n, const ACTIVATION a, float* delta)
 {
-    int i;
     #pragma omp parallel for
-    for(i = 0; i < n; ++i){
+    for(int i = 0; i < n; ++i){
         delta[i] *= gradient(x[i], a);
     }
 }
@@ -235,9 +231,8 @@ void gradient_array(const float* x, const int n, const ACTIVATION a, float* delt
 // https://github.com/BVLC/caffe/blob/04ab089db018a292ae48d51732dd6c66766b36b6/src/caffe/layers/swish_layer.cpp#L54-L56
 void gradient_array_swish(const float* x, const int n, const float* sigmoid, float* delta)
 {
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         float swish = x[i];
         delta[i] *= swish + sigmoid[i] * (1 - swish);
     }
@@ -247,14 +242,13 @@ void gradient_array_swish(const float* x, const int n, const float* sigmoid, flo
 // https://github.com/digantamisra98/Mish
 void gradient_array_mish(const int n, const float* activation_input, float* delta)
 {
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         const float THRESHOLD = 20.0f;
 
         // implementation from TensorFlow: https://github.com/tensorflow/addons/commit/093cdfa85d334cbe19a37624c33198f3140109ed
         // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
-        float inp = activation_input[i];
+        const float inp = activation_input[i];
         const float sp = (inp < THRESHOLD) ? log1p(exp(inp)) : inp;
         const float grad_sp = 1 - exp(-sp);
         const float tsp = tanh(sp);

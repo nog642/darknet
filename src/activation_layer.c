@@ -10,28 +10,29 @@
 #include <string.h>
 
 
-layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
+layer make_activation_layer(const int batch, const int inputs, const ACTIVATION activation)
 {
-    layer l = { (LAYER_TYPE)0 };
-    l.type = ACTIVE;
+    const layer l = (layer){
+        .type=ACTIVE,
 
-    l.inputs = inputs;
-    l.outputs = inputs;
-    l.batch=batch;
+        .batch=batch,
+        .inputs=inputs,
+        .outputs=inputs,
 
-    l.output = (float*)calloc(batch * inputs, sizeof(float));
-    l.delta = (float*)calloc(batch * inputs, sizeof(float));
+        .delta=calloc(batch * inputs, sizeof(float)),
+        .output=calloc(batch * inputs, sizeof(float)),
 
-    l.forward = forward_activation_layer;
-    l.backward = backward_activation_layer;
+        .forward=forward_activation_layer,
+        .backward=backward_activation_layer,
 #ifdef GPU
-    l.forward_gpu = forward_activation_layer_gpu;
-    l.backward_gpu = backward_activation_layer_gpu;
+        .forward_gpu=forward_activation_layer_gpu,
+        .backward_gpu=backward_activation_layer_gpu,
 
-    l.output_gpu = cuda_make_array(l.output, batch * inputs);
-    l.delta_gpu = cuda_make_array(l.delta, batch * inputs);
+        .output_gpu=cuda_make_array(l.output, batch * inputs),
+        .delta_gpu=cuda_make_array(l.delta, batch * inputs),
 #endif
-    l.activation = activation;
+        .activation=activation
+    };
     fprintf(stderr, "Activation Layer: %d inputs\n", inputs);
     return l;
 }
