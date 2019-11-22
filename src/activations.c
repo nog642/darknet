@@ -99,41 +99,62 @@ ACTIVATION get_activation(const char* const s)
 }
 
 
-float activate(float x, const ACTIVATION a)
+float activate(const float x, const ACTIVATION a)
 {
     switch (a) {
         case LINEAR:
-            return linear_activate(x);
+            return x;
         case LOGISTIC:
             return logistic_activate(x);
         case LOGGY:
-            return loggy_activate(x);
+            return 2.f / (1.f + expf(-x)) - 1;
         case RELU:
-            return relu_activate(x);
+            return x * (x > 0);
         case ELU:
-            return elu_activate(x);
+            return (x >= 0) * x + (x < 0) * (expf(x) - 1);
         case SELU:
-            return selu_activate(x);
+            return (x >= 0) * 1.0507f * x + (x < 0) * 1.0507f * 1.6732f * (expf(x) - 1);
         case RELIE:
-            return relie_activate(x);
+            return (x > 0) ? x : .01f * x;
         case RAMP:
-            return ramp_activate(x);
+            return x * (x > 0) + .1f * x;
         case LEAKY:
             return leaky_activate(x);
         case TANH:
             return tanh_activate(x);
         case PLSE:
-            return plse_activate(x);
-        case STAIR:
-            return stair_activate(x);
+            if (x < -4) {
+                return .01f * (x + 4);
+            }
+            if (x > 4) {
+                return .01f * (x - 4) + 1;
+            }
+            return .125f * x + .5f;
+        case STAIR:;
+            const int n = floorf(x);
+            if (n % 2 == 0) {
+                return floorf(x / 2.f);
+            }
+            return x - n + floorf(x / 2.f);
         case HARDTAN:
-            return hardtan_activate(x);
+            if (x < -1) {
+                return -1;
+            }
+            if (x > 1) {
+                return 1;
+            }
+            return x;
         case LHTAN:
-            return lhtan_activate(x);
+            if (x < 0) {
+                return .001f * x;
+            }
+            if (x > 1) {
+                return .001f * (x - 1) + 1;
+            }
+            return x;
         default:
-            break;
+            return 0;
     }
-    return 0;
 }
 
 
@@ -196,37 +217,46 @@ float gradient(float x, const ACTIVATION a)
 {
     switch (a) {
         case LINEAR:
-            return linear_gradient(x);
+            return 1;
         case LOGISTIC:
             return logistic_gradient(x);
-        case LOGGY:
-            return loggy_gradient(x);
+        case LOGGY:;
+            const float y = (x + 1.f) / 2.f;
+            return 2 * (1 - y) * y;
         case RELU:
-            return relu_gradient(x);
+            return x > 0;
         case ELU:
-            return elu_gradient(x);
+            return (x >= 0) + (x < 0) * (x + 1);
         case SELU:
-            return selu_gradient(x);
+            return (x >= 0) * 1.0507f + (x < 0) * (x + 1.0507f * 1.6732f);
         case RELIE:
-            return relie_gradient(x);
+            return (x > 0) ? 1 : .01f;
         case RAMP:
-            return ramp_gradient(x);
+            return (x > 0) + .1f;
         case LEAKY:
-            return leaky_gradient(x);
+            return (x > 0) ? 1 : .1f;
         case TANH:
-            return tanh_gradient(x);
+            return 1 - x * x;
         case PLSE:
-            return plse_gradient(x);
+            return (x < 0 || x > 1) ? .01f : .125f;
         case STAIR:
-            return stair_gradient(x);
+            if (floor(x) == x) {
+                return 0;
+            }
+            return 1;
         case HARDTAN:
-            return hardtan_gradient(x);
+            if (x > -1 && x < 1) {
+                return 1;
+            }
+            return 0;
         case LHTAN:
-            return lhtan_gradient(x);
+            if (x > 0 && x < 1) {
+                return 1;
+            }
+            return .001f;
         default:
-            break;
+            return 0;
     }
-    return 0;
 }
 
 
@@ -240,18 +270,18 @@ void gradient_array(const float* const x, const int n, const ACTIVATION a, float
 
 
 // https://github.com/BVLC/caffe/blob/04ab089db018a292ae48d51732dd6c66766b36b6/src/caffe/layers/swish_layer.cpp#L54-L56
-void gradient_array_swish(const float* x, const int n, const float* sigmoid, float* delta)
+void gradient_array_swish(const float* const x, const int n, const float* const sigmoid, float* const delta)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        float swish = x[i];
+        const float swish = x[i];
         delta[i] *= swish + sigmoid[i] * (1 - swish);
     }
 }
 
 
 // https://github.com/digantamisra98/Mish
-void gradient_array_mish(const int n, const float* activation_input, float* delta)
+void gradient_array_mish(const int n, const float* const activation_input, float* const delta)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
