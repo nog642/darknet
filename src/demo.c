@@ -110,9 +110,10 @@ double get_wall_time()
 }
 
 
-void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, int cam_index, char const * filename,
-          char * * names, int classes, int frame_skip, char * prefix, char * out_filename, int mjpeg_port,
-          int json_port, int dont_show, int ext_output, int letter_box_in)
+void demo(char * const cfgfile, char * const weightfile, float const thresh, float const hier_thresh,
+          int const cam_index, char const * const filename, char * * const names, int const classes,
+          int const frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
+          int const json_port, int const dont_show, int const ext_output, int const letter_box_in)
 {
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
@@ -151,7 +152,7 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
 
     layer l = net.layers[net.n-1];
 
-    avg = (float *)calloc(l.outputs, sizeof(float));
+    avg = calloc(l.outputs, sizeof(float));
     for (int j = 0; j < NFRAMES; ++j) {
         predictions[j] = (float *)calloc(l.outputs, sizeof(float));
     }
@@ -164,7 +165,6 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
         getchar();
         exit(0);
     }
-
 
     flag_exit = 0;
 
@@ -189,7 +189,7 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
 
     int count = 0;
     if (!prefix && !dont_show) {
-        int full_screen = 0;
+        int const full_screen = 0;
         create_window_cv("Demo", full_screen, 1352, 1013);
     }
 
@@ -201,13 +201,13 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
         output_video_writer = create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_mat(det_img),
                                                   get_height_mat(det_img), 1);
 
-        //'H', '2', '6', '4'
-        //'D', 'I', 'V', 'X'
-        //'M', 'J', 'P', 'G'
-        //'M', 'P', '4', 'V'
-        //'M', 'P', '4', '2'
-        //'X', 'V', 'I', 'D'
-        //'W', 'M', 'V', '2'
+        // 'H', '2', '6', '4'
+        // 'D', 'I', 'V', 'X'
+        // 'M', 'J', 'P', 'G'
+        // 'M', 'P', '4', 'V'
+        // 'M', 'P', '4', '2'
+        // 'X', 'V', 'I', 'D'
+        // 'W', 'M', 'V', '2'
     }
 
     double before = get_wall_time();
@@ -224,7 +224,7 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
 
             float nms = .45;  // 0.4F
             int local_nboxes = nboxes;
-            detection * local_dets = dets;
+            detection * const local_dets = dets;
 
             if (nms) {
                 // do_nms_obj(local_dets, local_nboxes, l.classes, nms);  // bad results
@@ -238,7 +238,7 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
 
             ++frame_id;
             if (demo_json_port > 0) {
-                int timeout = 400000;
+                int const timeout = 400000;
                 send_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
             }
 
@@ -255,8 +255,8 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
                     if (c == 10) {
                         if (frame_skip == 0) {
                             frame_skip = 60;
-                        } else if {
-                            (frame_skip == 4) frame_skip = 0;
+                        } else if (frame_skip == 4) {
+                            frame_skip = 0;
                         } else if (frame_skip == 60) {
                             frame_skip = 4;
                         } else {
@@ -276,10 +276,9 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
 
             // if you run it with param -mjpeg_port 8090  then open URL in your web-browser: http://localhost:8090
             if (mjpeg_port > 0 && show_img) {
-                int port = mjpeg_port;
-                int timeout = 400000;
-                int jpeg_quality = 40;  // 1 - 100
-                send_mjpeg(show_img, port, timeout, jpeg_quality);
+                int const timeout = 400000;
+                int const jpeg_quality = 40;  // 1 - 100
+                send_mjpeg(show_img, mjpeg_port, timeout, jpeg_quality);
             }
 
             // save video file
@@ -307,10 +306,10 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
         if (delay < 0) {
             delay = frame_skip;
 
-            // double after = get_wall_time();
-            // float curr = 1. / (after - before);
-            double after = get_time_point();  // more accurate time measurements
-            float curr = 1000000. / (after - before);
+            // double const after = get_wall_time();
+            // float const curr = 1. / (after - before);
+            double const after = get_time_point();  // more accurate time measurements
+            float const curr = 1000000. / (after - before);
             fps = curr;
             before = after;
         }
@@ -348,9 +347,10 @@ void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, in
     // cudaProfilerStop();
 }
 #else  // OPENCV
-void demo(char * cfgfile, char * weightfile, float thresh, float hier_thresh, int cam_index, char const * filename,
-          char * * names, int classes, int frame_skip, char * prefix, char * out_filename, int mjpeg_port,
-          int json_port, int dont_show, int ext_output, int letter_box_in)
+void demo(char * const cfgfile, char * const weightfile, float const thresh, float const hier_thresh,
+          int const cam_index, char const * const filename, char * * const names, int const classes,
+          int const frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
+          int const json_port, int const dont_show, int const ext_output, int const letter_box_in)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
