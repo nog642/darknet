@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 
-layer make_activation_layer(const int batch, const int inputs, const ACTIVATION activation);
+layer make_activation_layer(int batch, int inputs, ACTIVATION activation);
 
 
 void forward_activation_layer(layer l, network_state state);

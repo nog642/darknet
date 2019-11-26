@@ -6,7 +6,7 @@
 #include <string.h>
 
 
-char* get_activation_string(const ACTIVATION a)
+char * get_activation_string(ACTIVATION const a)
 {
     switch (a) {
         case LOGISTIC:
@@ -38,13 +38,12 @@ char* get_activation_string(const ACTIVATION a)
         case LHTAN:
             return "lhtan";
         default:
-            break;
+            return "relu";
     }
-    return "relu";
 }
 
 
-ACTIVATION get_activation(const char* const s)
+ACTIVATION get_activation(char const * const s)
 {
     if (strcmp(s, "logistic") == 0) {
         return LOGISTIC;
@@ -99,7 +98,7 @@ ACTIVATION get_activation(const char* const s)
 }
 
 
-float activate(const float x, const ACTIVATION a)
+float activate(float const x, ACTIVATION const a)
 {
     switch (a) {
         case LINEAR:
@@ -131,7 +130,7 @@ float activate(const float x, const ACTIVATION a)
             }
             return .125f * x + .5f;
         case STAIR:;
-            const int n = floorf(x);
+            int const n = floorf(x);
             if (n % 2 == 0) {
                 return floorf(x / 2.f);
             }
@@ -158,7 +157,7 @@ float activate(const float x, const ACTIVATION a)
 }
 
 
-void activate_array(float* const x, const int n, const ACTIVATION a)
+void activate_array(float * const x, int const n, ACTIVATION const a)
 {
     switch (a) {
         case LINEAR:
@@ -183,12 +182,12 @@ void activate_array(float* const x, const int n, const ACTIVATION a)
 }
 
 
-void activate_array_swish(const float* const x, const int n, float* const output_sigmoid, float* const output)
+void activate_array_swish(float const * const x, int const n, float * const output_sigmoid, float * const output)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        const float x_val = x[i];
-        const float sigmoid = logistic_activate(x_val);
+        float const x_val = x[i];
+        float const sigmoid = logistic_activate(x_val);
         output_sigmoid[i] = sigmoid;
         output[i] = x_val * sigmoid;
     }
@@ -196,12 +195,12 @@ void activate_array_swish(const float* const x, const int n, float* const output
 
 
 // https://github.com/digantamisra98/Mish
-void activate_array_mish(const float* const x, const int n, float* const activation_input, float* const output)
+void activate_array_mish(float const * const x, int const n, float * const activation_input, float * const output)
 {
-    const float MISH_THRESHOLD = 20;
+    float const MISH_THRESHOLD = 20;
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        const float x_val = x[i];
+        float const x_val = x[i];
         activation_input[i] = x_val;  // store value before activation
         // output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
         if (x_val < MISH_THRESHOLD) {
@@ -213,7 +212,7 @@ void activate_array_mish(const float* const x, const int n, float* const activat
 }
 
 
-float gradient(float x, const ACTIVATION a)
+float gradient(float const x, ACTIVATION const a)
 {
     switch (a) {
         case LINEAR:
@@ -221,7 +220,7 @@ float gradient(float x, const ACTIVATION a)
         case LOGISTIC:
             return logistic_gradient(x);
         case LOGGY:;
-            const float y = (x + 1.f) / 2.f;
+            float const y = (x + 1.f) / 2.f;
             return 2 * (1 - y) * y;
         case RELU:
             return x > 0;
@@ -260,7 +259,7 @@ float gradient(float x, const ACTIVATION a)
 }
 
 
-void gradient_array(const float* const x, const int n, const ACTIVATION a, float* const delta)
+void gradient_array(float const * const x, int const n, ACTIVATION const a, float * const delta)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
@@ -270,31 +269,31 @@ void gradient_array(const float* const x, const int n, const ACTIVATION a, float
 
 
 // https://github.com/BVLC/caffe/blob/04ab089db018a292ae48d51732dd6c66766b36b6/src/caffe/layers/swish_layer.cpp#L54-L56
-void gradient_array_swish(const float* const x, const int n, const float* const sigmoid, float* const delta)
+void gradient_array_swish(float const * const x, int const n, float const * const sigmoid, float * const delta)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        const float swish = x[i];
+        float const swish = x[i];
         delta[i] *= swish + sigmoid[i] * (1 - swish);
     }
 }
 
 
 // https://github.com/digantamisra98/Mish
-void gradient_array_mish(const int n, const float* const activation_input, float* const delta)
+void gradient_array_mish(int const n, float const * const activation_input, float * const delta)
 {
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        const float MISH_THRESHOLD = 20.0f;
+        float const MISH_THRESHOLD = 20.0f;
 
         // implementation from TensorFlow: https://github.com/tensorflow/addons/commit/093cdfa85d334cbe19a37624c33198f3140109ed
         // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
-        const float inp = activation_input[i];
-        const float sp = (inp < MISH_THRESHOLD) ? log1p(exp(inp)) : inp;
-        const float grad_sp = 1 - exp(-sp);
-        const float tsp = tanh(sp);
-        const float grad_tsp = (1 - tsp * tsp) * grad_sp;
-        const float grad = inp * grad_tsp + tsp;
+        float const inp = activation_input[i];
+        float const sp = (inp < MISH_THRESHOLD) ? log1p(exp(inp)) : inp;
+        float const grad_sp = 1 - exp(-sp);
+        float const tsp = tanh(sp);
+        float const grad_tsp = (1 - tsp * tsp) * grad_sp;
+        float const grad = inp * grad_tsp + tsp;
         delta[i] *= grad;
 
         // float x = activation_input[i];

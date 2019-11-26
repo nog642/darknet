@@ -10,9 +10,9 @@
 #include <string.h>
 
 
-layer make_activation_layer(const int batch, const int inputs, const ACTIVATION activation)
+layer make_activation_layer(int const batch, int const inputs, ACTIVATION const activation)
 {
-    const layer l = (layer){
+    layer const l = (layer){
         .type=ACTIVE,
 
         .batch=batch,

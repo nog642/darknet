@@ -3,35 +3,36 @@
 #include <stdio.h>
 
 
-layer make_batchnorm_layer(int batch, int w, int h, int c)
+layer make_batchnorm_layer(int const batch, int const w, int const h, int const c)
 {
     fprintf(stderr, "Batch Normalization Layer: %d x %d x %d image\n", w, h, c);
-    layer layer = { (LAYER_TYPE)0 };
+    layer layer = {0};
     layer.type = BATCHNORM;
     layer.batch = batch;
     layer.h = layer.out_h = h;
     layer.w = layer.out_w = w;
     layer.c = layer.out_c = c;
-    layer.output = (float*)calloc(h * w * c * batch, sizeof(float));
-    layer.delta = (float*)calloc(h * w * c * batch, sizeof(float));
+    layer.output = calloc(h * w * c * batch, sizeof(float));
+    layer.delta = calloc(h * w * c * batch, sizeof(float));
     layer.inputs = w * h * c;
     layer.outputs = layer.inputs;
 
-    layer.scales = (float*)calloc(c, sizeof(float));
-    layer.scale_updates = (float*)calloc(c, sizeof(float));
-    int i;
-    for(i = 0; i < c; ++i){
+    layer.scales = calloc(c, sizeof(float));
+    layer.scale_updates = calloc(c, sizeof(float));
+    for (int i = 0; i < c; ++i) {
         layer.scales[i] = 1;
     }
+    // TODO: use malloc+memset instead of calloc+for
 
-    layer.mean = (float*)calloc(c, sizeof(float));
-    layer.variance = (float*)calloc(c, sizeof(float));
+    layer.mean = calloc(c, sizeof(float));
+    layer.variance = calloc(c, sizeof(float));
 
-    layer.rolling_mean = (float*)calloc(c, sizeof(float));
-    layer.rolling_variance = (float*)calloc(c, sizeof(float));
+    layer.rolling_mean = calloc(c, sizeof(float));
+    layer.rolling_variance = calloc(c, sizeof(float));
 
     layer.forward = forward_batchnorm_layer;
     layer.backward = backward_batchnorm_layer;
+
 #ifdef GPU
     layer.forward_gpu = forward_batchnorm_layer_gpu;
     layer.backward_gpu = backward_batchnorm_layer_gpu;
@@ -51,29 +52,31 @@ layer make_batchnorm_layer(int batch, int w, int h, int c)
     layer.mean_delta_gpu = cuda_make_array(layer.mean, c);
     layer.variance_delta_gpu = cuda_make_array(layer.variance, c);
 
-    layer.x_gpu = cuda_make_array(layer.output, layer.batch*layer.outputs);
-    layer.x_norm_gpu = cuda_make_array(layer.output, layer.batch*layer.outputs);
+    layer.x_gpu = cuda_make_array(layer.output, layer.batch * layer.outputs);
+    layer.x_norm_gpu = cuda_make_array(layer.output, layer.batch * layer.outputs);
+
 #ifdef CUDNN
     cudnnCreateTensorDescriptor(&layer.normTensorDesc);
     cudnnCreateTensorDescriptor(&layer.normDstTensorDesc);
-    cudnnSetTensor4dDescriptor(layer.normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, layer.batch, layer.out_c, layer.out_h, layer.out_w);
+    cudnnSetTensor4dDescriptor(layer.normDstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, layer.batch, layer.out_c,
+                               layer.out_h, layer.out_w);
     cudnnSetTensor4dDescriptor(layer.normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, layer.out_c, 1, 1);
-#endif
-#endif
+#endif  // CUDNN
+
+#endif  // GPU
+
     return layer;
 }
 
 
-void backward_scale_cpu(float* x_norm, float* delta, int batch, int n, int size, float* scale_updates)
+void backward_scale_cpu(float const * const x_norm, float const * const delta, int const batch, int const n,
+                        int const size, float * const scale_updates)
 {
-    int i;
-    int b;
-    int f;
-    for (f = 0; f < n; ++f) {
+    for (int f = 0; f < n; ++f) {
         float sum = 0;
-        for (b = 0; b < batch; ++b) {
-            for (i = 0; i < size; ++i) {
-                int index = i + size * (f + n * b);
+        for (int b = 0; b < batch; ++b) {
+            for (int i = 0; i < size; ++i) {
+                int const index = i + size * (f + n * b);
                 sum += delta[index] * x_norm[index];
             }
         }
@@ -82,15 +85,13 @@ void backward_scale_cpu(float* x_norm, float* delta, int batch, int n, int size,
 }
 
 
-void mean_delta_cpu(float* delta, float* variance, int batch, int filters, int spatial, float* mean_delta)
+void mean_delta_cpu(float const * const delta, float const * const variance, int const batch, int const filters,
+                    int const spatial, float * const mean_delta)
 {
-    int i;
-    int j;
-    int k;
-    for (i = 0; i < filters; ++i) {
+    for (int i = 0; i < filters; ++i) {
         mean_delta[i] = 0;
-        for (j = 0; j < batch; ++j) {
-            for (k = 0; k < spatial; ++k) {
+        for (int j = 0; j < batch; ++j) {
+            for (int k = 0; k < spatial; ++k) {
                 int index = j * filters * spatial + i * spatial + k;
                 mean_delta[i] += delta[index];
             }
@@ -100,16 +101,15 @@ void mean_delta_cpu(float* delta, float* variance, int batch, int filters, int s
 }
 
 
-void  variance_delta_cpu(float* x, float* delta, float* mean, float* variance, int batch, int filters, int spatial, float* variance_delta)
+void  variance_delta_cpu(float const * const x, float const * const delta, float const * const mean,
+                         float const * const variance, int const batch, int const filters, int const spatial,
+                         float * const variance_delta)
 {
-    int i;
-    int j;
-    int k;
-    for (i = 0; i < filters; ++i) {
+    for (int i = 0; i < filters; ++i) {
         variance_delta[i] = 0;
-        for (j = 0; j < batch; ++j) {
-            for(k = 0; k < spatial; ++k){
-                int index = j * filters * spatial + i * spatial + k;
+        for (int j = 0; j < batch; ++j) {
+            for (int k = 0; k < spatial; ++k) {
+                int const index = j * filters * spatial + i * spatial + k;
                 variance_delta[i] += delta[index] * (x[index] - mean[i]);
             }
         }
@@ -118,15 +118,14 @@ void  variance_delta_cpu(float* x, float* delta, float* mean, float* variance, i
 }
 
 
-void normalize_delta_cpu(float* x, float* mean, float* variance, float* mean_delta, float* variance_delta, int batch, int filters, int spatial, float* delta)
+void normalize_delta_cpu(float const * const x, float const * const mean, float const * const variance,
+                         float const * const mean_delta, float const * const variance_delta, int const batch,
+                         int const filters, int const spatial, float * const delta)
 {
-    int f;
-    int j;
-    int k;
-    for (j = 0; j < batch; ++j) {
-        for (f = 0; f < filters; ++f) {
-            for (k = 0; k < spatial; ++k) {
-                int index = j * filters * spatial + f * spatial + k;
+    for (int j = 0; j < batch; ++j) {
+        for (int f = 0; f < filters; ++f) {
+            for (int k = 0; k < spatial; ++k) {
+                int const index = j * filters * spatial + f * spatial + k;
                 delta[index] = delta[index] * 1. / (sqrt(variance[f]) + .00001f) + variance_delta[f] * 2. * (x[index] - mean[f]) / (spatial * batch) + mean_delta[f] / (spatial * batch);
             }
         }
@@ -134,13 +133,13 @@ void normalize_delta_cpu(float* x, float* mean, float* variance, float* mean_del
 }
 
 
-void resize_batchnorm_layer(layer* layer, int w, int h)
-{
-    fprintf(stderr, "Not implemented\n");
-}
+// void resize_batchnorm_layer(layer * const layer, int const w, int const h)
+// {
+//     fprintf(stderr, "Not implemented\n");
+// }
 
 
-void forward_batchnorm_layer(layer l, network_state state)
+void forward_batchnorm_layer(layer l, network_state const state)
 {
     if (l.type == BATCHNORM) {
         copy_cpu(l.outputs * l.batch, state.input, 1, l.output, 1);
@@ -164,11 +163,11 @@ void forward_batchnorm_layer(layer l, network_state state)
     } else {
         normalize_cpu(l.output, l.rolling_mean, l.rolling_variance, l.batch, l.out_c, l.out_h * l.out_w);
     }
-    scale_bias(l.output, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
+    scale_bias(l.output, l.scales, l.batch, l.out_c, l.out_h * l.out_w);
 }
 
 
-void backward_batchnorm_layer(const layer l, network_state state)
+void backward_batchnorm_layer(layer const l, network_state const state)
 {
     backward_scale_cpu(l.x_norm, l.delta, l.batch, l.out_c, l.out_w * l.out_h, l.scale_updates);
 
@@ -177,15 +176,15 @@ void backward_batchnorm_layer(const layer l, network_state state)
     mean_delta_cpu(l.delta, l.variance, l.batch, l.out_c, l.out_w * l.out_h, l.mean_delta);
     variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.out_c, l.out_w * l.out_h, l.variance_delta);
     normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.out_c, l.out_w * l.out_h, l.delta);
-    if(l.type == BATCHNORM) {
-        copy_cpu(l.outputs*l.batch, l.delta, 1, state.delta, 1);
+    if (l.type == BATCHNORM) {
+        copy_cpu(l.outputs * l.batch, l.delta, 1, state.delta, 1);
     }
 }
 
 
 #ifdef GPU
 
-void pull_batchnorm_layer(layer l)
+void pull_batchnorm_layer(layer const l)
 {
     cuda_pull_array(l.scales_gpu, l.scales, l.c);
     cuda_pull_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
@@ -193,7 +192,7 @@ void pull_batchnorm_layer(layer l)
 }
 
 
-void push_batchnorm_layer(layer l)
+void push_batchnorm_layer(layer const l)
 {
     cuda_push_array(l.scales_gpu, l.scales, l.c);
     cuda_push_array(l.rolling_mean_gpu, l.rolling_mean, l.c);
@@ -201,7 +200,7 @@ void push_batchnorm_layer(layer l)
 }
 
 
-void forward_batchnorm_layer_gpu(layer l, network_state state)
+void forward_batchnorm_layer_gpu(layer const l, network_state const state)
 {
     if (l.type == BATCHNORM) {
         simple_copy_ongpu(l.outputs * l.batch, state.input, l.output_gpu);
@@ -209,11 +208,11 @@ void forward_batchnorm_layer_gpu(layer l, network_state state)
     }
 
     if (state.train) {
-        simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.x_gpu);
-        //copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
+        simple_copy_ongpu(l.outputs * l.batch, l.output_gpu, l.x_gpu);
+        // copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.x_gpu, 1);
 #ifdef CUDNN
-        float one = 1;
-        float zero = 0;
+        float const one = 1;
+        float const zero = 0;
         cudnnBatchNormalizationForwardTraining(
             cudnn_handle(),
             CUDNN_BATCHNORM_SPATIAL,

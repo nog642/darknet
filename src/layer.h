@@ -4,6 +4,7 @@
 #include "activations.h"
 #include "stddef.h"
 #include "tree.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -119,7 +120,7 @@ struct layer{
     int reorg;
     int log;
 	int tanh;
-	int *mask;
+	int * mask;
 	int total;
 	float bflops;
 
@@ -129,15 +130,15 @@ struct layer{
     float eps;
 
     int t;
-    float *m;
-    float *v;
+    float * m;
+    float * v;
     float * bias_m;
     float * bias_v;
     float * scale_m;
     float * scale_v;
 
-    tree *softmax_tree;
-    int  *map;
+    tree * softmax_tree;
+    int  * map;
 
     float alpha;
     float beta;
@@ -166,46 +167,46 @@ struct layer{
     float probability;
     float scale;
 
-    int *indexes;
-    float *rand;
-    float *cost;
-    char  *cweights;
-    float *state;
-    float *prev_state;
-    float *forgot_state;
-    float *forgot_delta;
-    float *state_delta;
+    int * indexes;
+    float * rand;
+    float * cost;
+    char  * cweights;
+    float * state;
+    float * prev_state;
+    float * forgot_state;
+    float * forgot_delta;
+    float * state_delta;
 
-    float *concat;
-    float *concat_delta;
+    float * concat;
+    float * concat_delta;
 
-    float *binary_weights;
+    float * binary_weights;
 
-    float *biases;
-    float *bias_updates;
+    float * biases;
+    float * bias_updates;
 
-    float *scales;
-    float *scale_updates;
+    float * scales;
+    float * scale_updates;
 
-    float *weights;
-    float *weight_updates;
+    float * weights;
+    float * weight_updates;
 
-    char *align_bit_weights_gpu;
-    float *mean_arr_gpu;
-    float *align_workspace_gpu;
-    float *transposed_align_workspace_gpu;
+    char * align_bit_weights_gpu;
+    float * mean_arr_gpu;
+    float * align_workspace_gpu;
+    float * transposed_align_workspace_gpu;
     int align_workspace_size;
 
-    char *align_bit_weights;
-    float *mean_arr;
+    char * align_bit_weights;
+    float * mean_arr;
     int align_bit_weights_size;
     int lda_align;
     int new_lda;
     int bit_align;
 
-    float *col_image;
-    int   * input_layers;
-    int   * input_sizes;
+    float * col_image;
+    int * input_layers;
+    int * input_sizes;
     float * delta;
     float * output;
 	float * loss;
@@ -225,40 +226,40 @@ struct layer{
     float * x;
     float * x_norm;
 
-    struct layer *input_layer;
-    struct layer *self_layer;
-    struct layer *output_layer;
+    struct layer * input_layer;
+    struct layer * self_layer;
+    struct layer * output_layer;
 
-    struct layer *input_gate_layer;
-    struct layer *state_gate_layer;
-    struct layer *input_save_layer;
-    struct layer *state_save_layer;
-    struct layer *input_state_layer;
-    struct layer *state_state_layer;
+    struct layer * input_gate_layer;
+    struct layer * state_gate_layer;
+    struct layer * input_save_layer;
+    struct layer * state_save_layer;
+    struct layer * input_state_layer;
+    struct layer * state_state_layer;
 
-    struct layer *input_z_layer;
-    struct layer *state_z_layer;
+    struct layer * input_z_layer;
+    struct layer * state_z_layer;
 
-    struct layer *input_r_layer;
-    struct layer *state_r_layer;
+    struct layer * input_r_layer;
+    struct layer * state_r_layer;
 
-    struct layer *input_h_layer;
-    struct layer *state_h_layer;
+    struct layer * input_h_layer;
+    struct layer * state_h_layer;
 
-    float *z_cpu;
-    float *r_cpu;
-    float *h_cpu;
+    float * z_cpu;
+    float * r_cpu;
+    float * h_cpu;
 
-    float *binary_input;
+    float * binary_input;
 
     size_t workspace_size;
 
 #ifdef GPU
-    float *z_gpu;
-    float *r_gpu;
-    float *h_gpu;
+    float * z_gpu;
+    float * r_gpu;
+    float * h_gpu;
 
-    int *indexes_gpu;
+    int * indexes_gpu;
     float * prev_state_gpu;
     float * forgot_state_gpu;
     float * forgot_delta_gpu;
@@ -272,15 +273,15 @@ struct layer{
     float * concat_delta_gpu;
 
     // adam
-    float *m_gpu;
-    float *v_gpu;
-    float *bias_m_gpu;
-    float *scale_m_gpu;
-    float *bias_v_gpu;
-    float *scale_v_gpu;
+    float * m_gpu;
+    float * v_gpu;
+    float * bias_m_gpu;
+    float * scale_m_gpu;
+    float * bias_v_gpu;
+    float * scale_v_gpu;
 
-    float *binary_input_gpu;
-    float *binary_weights_gpu;
+    float * binary_input_gpu;
+    float * binary_weights_gpu;
 
     float * mean_gpu;
     float * variance_gpu;
@@ -330,9 +331,11 @@ struct layer{
 #endif  // GPU
 };
 */
+
 //void free_layer(layer);
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+
+#endif  // BASE_LAYER_H
