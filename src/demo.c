@@ -28,7 +28,7 @@ static int nboxes = 0;
 static detection * dets = NULL;
 
 static network net;
-static image in_s ;
+static image in_s;
 static image det_s;
 
 static cap_cv * cap;
@@ -118,7 +118,7 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
     // skip = frame_skip;
-    image * * alphabet = load_alphabet();
+    image * * const alphabet = load_alphabet();
     int delay = frame_skip;
     demo_names = names;
     demo_alphabet = alphabet;
@@ -150,7 +150,7 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
         error("Couldn't connect to webcam.\n");
     }
 
-    layer l = net.layers[net.n-1];
+    layer l = net.layers[net.n - 1];
 
     avg = calloc(l.outputs, sizeof(float));
     for (int j = 0; j < NFRAMES; ++j) {

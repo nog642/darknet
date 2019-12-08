@@ -1565,26 +1565,27 @@ void show_images(image *ims, int n, char *window)
     free_image(m);
 }
 
+
 void free_image(image m)
 {
-    if(m.data){
+    if (m.data) {
         free(m.data);
     }
 }
 
+
 // Fast copy data from a contiguous byte array into the image.
-LIB_API void copy_image_from_bytes(image im, char *pdata)
+LIB_API void copy_image_from_bytes(image im, char * pdata)
 {
-    unsigned char *data = (unsigned char*)pdata;
-    int i, k, j;
+    unsigned char * data = (unsigned char *)pdata;
     int w = im.w;
     int h = im.h;
     int c = im.c;
-    for (k = 0; k < c; ++k) {
-        for (j = 0; j < h; ++j) {
-            for (i = 0; i < w; ++i) {
-                int dst_index = i + w * j + w * h*k;
-                int src_index = k + c * i + c * w*j;
+    for (int k = 0; k < c; ++k) {
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
+                int dst_index = i + w * j + w * h * k;
+                int src_index = k + c * i + c * w * j;
                 im.data[dst_index] = (float)data[src_index] / 255.;
             }
         }
