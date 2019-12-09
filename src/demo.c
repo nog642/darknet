@@ -112,7 +112,7 @@ double get_wall_time()
 
 void demo(char * const cfgfile, char * const weightfile, float const thresh, float const hier_thresh,
           int const cam_index, char const * const filename, char * * const names, int const classes,
-          int const frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
+          int frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
           int const json_port, int const dont_show, int const ext_output, int const letter_box_in,
           int time_limit_sec, char * http_post_host)
 {
