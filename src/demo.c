@@ -7,7 +7,7 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
-
+#include "darknet.h"
 #ifdef WIN32
 #include <time.h>
 #include "gettimeofday.h"
@@ -113,7 +113,8 @@ double get_wall_time()
 void demo(char * const cfgfile, char * const weightfile, float const thresh, float const hier_thresh,
           int const cam_index, char const * const filename, char * * const names, int const classes,
           int const frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
-          int const json_port, int const dont_show, int const ext_output, int const letter_box_in)
+          int const json_port, int const dont_show, int const ext_output, int const letter_box_in,
+          int time_limit_sec, char * http_post_host)
 {
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
@@ -210,6 +211,8 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
         // 'W', 'M', 'V', '2'
     }
 
+    int send_http_post_once = 0;
+    const double start_time_lim = get_time_point();
     double before = get_wall_time();
 
     while (1) {
@@ -228,7 +231,8 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
 
             if (nms) {
                 // do_nms_obj(local_dets, local_nboxes, l.classes, nms);  // bad results
-                do_nms_sort(local_dets, local_nboxes, l.classes, nms);
+                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
+                else diounms_sort(local_dets, local_nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
             }
 
             // printf("\033[2J");
@@ -240,6 +244,17 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
             if (demo_json_port > 0) {
                 int const timeout = 400000;
                 send_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
+            }
+
+            //char *http_post_server = "webhook.site/898bbd9b-0ddd-49cf-b81d-1f56be98d870";
+            if (http_post_host && !send_http_post_once) {
+                int timeout = 3;            // 3 seconds
+                int http_post_port = 80;    // 443 https, 80 http
+                if (send_http_post_request(http_post_host, http_post_port, filename,
+                    dets, nboxes, classes, names, frame_id, ext_output, timeout))
+                {
+                    if (time_limit_sec > 0) send_http_post_once = 1;
+                }
             }
 
             draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet,
@@ -291,6 +306,11 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
 
             pthread_join(fetch_thread, 0);
             pthread_join(detect_thread, 0);
+
+            if (time_limit_sec > 0 && (get_time_point() - start_time_lim)/1000000 > time_limit_sec) {
+                printf(" start_time_lim = %f, get_time_point() = %f, time spent = %f \n", start_time_lim, get_time_point(), get_time_point() - start_time_lim);
+                break;
+            }
 
             if (flag_exit == 1) {
                 break;
@@ -350,7 +370,8 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
 void demo(char * const cfgfile, char * const weightfile, float const thresh, float const hier_thresh,
           int const cam_index, char const * const filename, char * * const names, int const classes,
           int const frame_skip, char * const prefix, char * const out_filename, int const mjpeg_port,
-          int const json_port, int const dont_show, int const ext_output, int const letter_box_in)
+          int const json_port, int const dont_show, int const ext_output, int const letter_box_in,
+          int time_limit_sec, char * http_post_host)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

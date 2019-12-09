@@ -512,7 +512,7 @@ static inline int popcnt_32(uint32_t val32) {
 //----------------------------
 
 
-#if (defined(__AVX__) && defined(__x86_64__)) || defined(_WIN64)
+#if (defined(__AVX__) && defined(__x86_64__)) || (defined(_WIN64) && !defined(__MINGW32__))
 
 #ifdef _WIN64
 #include <intrin.h>
@@ -2855,3 +2855,10 @@ int test_gpu_blas()
     return 0;
 }
 #endif
+
+
+
+void init_cpu() {
+    is_avx();
+    is_fma_avx2();
+}

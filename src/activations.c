@@ -54,6 +54,12 @@ ACTIVATION get_activation(char const * const s)
     if (strcmp(s, "mish") == 0) {
         return MISH;
     }
+    if (strcmp(s, "normalize_channels") == 0) {
+        return NORM_CHAN;
+    }
+    if (strcmp(s, "normalize_channels_softmax") == 0) {
+        return NORM_CHAN_SOFTMAX;
+    }
     if (strcmp(s, "loggy") == 0) {
         return LOGGY;
     }
@@ -202,11 +208,89 @@ void activate_array_mish(float const * const x, int const n, float * const activ
     for (int i = 0; i < n; ++i) {
         float const x_val = x[i];
         activation_input[i] = x_val;  // store value before activation
-        // output[i] = x_val * tanh_activate(log(1 + expf(x_val)));
-        if (x_val < MISH_THRESHOLD) {
-            output[i] = x_val * tanh_activate(log(expf(x_val)));
-        } else {
-            output[i] = x_val * tanh_activate(x_val);
+        output[i] = x_val * tanh_activate(softplus_activate(x_val, MISH_THRESHOLD));
+     }
+}
+
+void activate_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *output)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        const float eps = 0.0001;
+        if (i < size) {
+            float sum = eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                if (val > 0) sum += val;
+            }
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                if (val > 0) val = val / sum;
+                else val = 0;
+                output[wh_i + k * wh_step + b*wh_step*channels] = val;
+            }
+        }
+    }
+}
+
+void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        const float eps = 0.0001;
+        if (i < size) {
+            float sum = eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                sum += expf(val);
+            }
+            for (k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+                val = expf(val) / sum;
+                output[wh_i + k * wh_step + b*wh_step*channels] = val;
+            }
+        }
+    }
+}
+
+void gradient_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *delta)
+{
+    int size = n / channels;
+
+    int i;
+    #pragma omp parallel for
+    for (i = 0; i < size; ++i) {
+        int wh_i = i % wh_step;
+        int b = i / wh_step;
+
+        //const float eps = 0.0001;
+        if (i < size) {
+            float grad = 0;// eps;
+            int k;
+            for (k = 0; k < channels; ++k) {
+                float out = x[wh_i + k * wh_step + b*wh_step*channels];
+                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                grad += out*d;
+            }
+            for (k = 0; k < channels; ++k) {
+                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
+                d = d * grad;
+                delta[wh_i + k * wh_step + b*wh_step*channels] = d;
+            }
         }
     }
 }
@@ -223,7 +307,13 @@ float gradient(float const x, ACTIVATION const a)
             float const y = (x + 1.f) / 2.f;
             return 2 * (1 - y) * y;
         case RELU:
-            return x > 0;
+            return relu_gradient(x);
+        case NORM_CHAN:
+            return relu_gradient(x);
+        case NORM_CHAN_SOFTMAX:
+            printf(" Error: should be used custom NORM_CHAN_SOFTMAX-function for gradient \n");
+            exit(0);
+            return 0;
         case ELU:
             return (x >= 0) + (x < 0) * (x + 1);
         case SELU:
@@ -289,7 +379,7 @@ void gradient_array_mish(int const n, float const * const activation_input, floa
         // implementation from TensorFlow: https://github.com/tensorflow/addons/commit/093cdfa85d334cbe19a37624c33198f3140109ed
         // implementation from Pytorch: https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h#L26-L31
         float const inp = activation_input[i];
-        float const sp = (inp < MISH_THRESHOLD) ? log1p(exp(inp)) : inp;
+        float const sp = softplus_activate(inp, MISH_THRESHOLD);
         float const grad_sp = 1 - exp(-sp);
         float const tsp = tanh(sp);
         float const grad_tsp = (1 - tsp * tsp) * grad_sp;

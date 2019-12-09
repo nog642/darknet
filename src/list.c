@@ -99,6 +99,18 @@ void free_node(node* n)
 }
 
 
+void free_list_val(list *l)
+{
+    node *n = l->front;
+    node *next;
+    while (n) {
+        next = n->next;
+        free(n->val);
+        n = next;
+    }
+}
+
+
 /**
  * Free the memory allocated for a list and all its nodes.
  * The values stored in the list are not freed.

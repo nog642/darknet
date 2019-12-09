@@ -27,9 +27,10 @@ void list_insert(list* const l, void* const val);
 
 void** list_to_array(const list* const l);
 
-void free_list(list* const l);
-void free_list_contents(const list* const l);
-void free_list_contents_kvp(const list* const l);
+void free_list_val(list *l);
+void free_list(list *l);
+void free_list_contents(const list* l);
+void free_list_contents_kvp(const list* l);
 
 #ifdef __cplusplus
 }

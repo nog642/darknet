@@ -14,7 +14,9 @@
 #include "gettimeofday.h"
 #else
 #include <sys/time.h>
+#include <sys/stat.h>
 #endif
+
 
 #ifndef USE_CMAKE_LIBS
 #pragma warning(disable: 4996)
@@ -180,7 +182,7 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
 
     sprintf(buffer, "%s", str);
     if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
-        sprintf(output, "%s", str);
+        sprintf(output, "%s", buffer);
         free(buffer);
         return;
     }
@@ -939,4 +941,34 @@ int max_int_index(int *a, int n)
         }
     }
     return max_i;
+}
+
+
+// Absolute box from relative coordinate bounding box and image size
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)
+{
+    boxabs ba;
+    ba.left = (b->x - b->w / 2.)*img_w;
+    ba.right = (b->x + b->w / 2.)*img_w;
+    ba.top = (b->y - b->h / 2.)*img_h;
+    ba.bot = (b->y + b->h / 2.)*img_h;
+
+    if (bounds_check) {
+        if (ba.left < 0) ba.left = 0;
+        if (ba.right > img_w - 1) ba.right = img_w - 1;
+        if (ba.top < 0) ba.top = 0;
+        if (ba.bot > img_h - 1) ba.bot = img_h - 1;
+    }
+
+    return ba;
+}
+
+
+int make_directory(char *path, int mode)
+{
+#ifdef WIN32
+    return _mkdir(path);
+#else
+    return mkdir(path, mode);
+#endif
 }
