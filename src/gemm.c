@@ -24,57 +24,64 @@
 #define PUT_IN_REGISTER register
 #endif
 
-void gemm_bin(int M, int N, int K, float ALPHA,
-        char  *A, int lda,
-        float *B, int ldb,
-        float *C, int ldc)
+
+void gemm_bin(int const M, int const N, int const K, float const ALPHA,
+              char const * const A, int const lda,
+              float const * const B, int const ldb,
+              float * const C, int const ldc)
 {
-    int i,j,k;
-    for(i = 0; i < M; ++i){
-        for(k = 0; k < K; ++k){
-            char A_PART = A[i*lda+k];
-            if(A_PART){
-                for(j = 0; j < N; ++j){
-                    C[i*ldc+j] += B[k*ldb+j];
+    for (int i = 0; i < M; ++i){
+        for (int k = 0; k < K; ++k){
+            char const A_PART = A[i * lda + k];
+            if (A_PART) {
+                for (int j = 0; j < N; ++j){
+                    C[i * ldc + j] += B[k * ldb + j];
                 }
             } else {
-                for(j = 0; j < N; ++j){
-                    C[i*ldc+j] -= B[k*ldb+j];
+                for (int j = 0; j < N; ++j){
+                    C[i * ldc + j] -= B[k * ldb + j];
                 }
             }
         }
     }
 }
 
-float *random_matrix(int rows, int cols)
+
+float * random_matrix(int const rows, int const cols)
 {
-    int i;
-    float* m = (float*)calloc(rows * cols, sizeof(float));
-    for(i = 0; i < rows*cols; ++i){
-        m[i] = (float)rand()/RAND_MAX;
+    float * const m = calloc(rows * cols, sizeof(float));
+    for (int i = 0; i < rows * cols; ++i){
+        m[i] = (float)rand() / RAND_MAX;
     }
     return m;
 }
 
+
 void time_random_matrix(int TA, int TB, int m, int k, int n)
 {
-    float *a;
-    if(!TA) a = random_matrix(m,k);
-    else a = random_matrix(k,m);
-    int lda = (!TA)?k:m;
-    float *b;
-    if(!TB) b = random_matrix(k,n);
-    else b = random_matrix(n,k);
-    int ldb = (!TB)?n:k;
+    float * a;
+    if (!TA) {
+        a = random_matrix(m, k);
+    } else {
+        a = random_matrix(k, m);
+    }
+    int lda = (!TA) ? k : m;
+    float * b;
+    if (!TB) {
+        b = random_matrix(k, n);
+    } else {
+        b = random_matrix(n, k);
+    }
+    int ldb = (!TB) ? n : k;
 
-    float *c = random_matrix(m,n);
-    int i;
-    clock_t start = clock(), end;
-    for(i = 0; i<10; ++i){
-        gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
+    float * c = random_matrix(m, n);
+    clock_t start = clock();
+    clock_t end;
+    for (int i = 0; i < 10; ++i) {
+        gemm_cpu(TA, TB, m, n, k, 1, a, lda, b, ldb, 1, c, n);
     }
     end = clock();
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n", m, k, k, n, TA, TB, (float)(end - start) / CLOCKS_PER_SEC);
     free(a);
     free(b);
     free(c);
@@ -82,12 +89,12 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
 
 
 void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
-        float *A, int lda,
-        float *B, int ldb,
-        float BETA,
-        float *C, int ldc)
+          float * A, int lda,
+          float * B, int ldb,
+          float BETA,
+          float * C, int ldc)
 {
-    gemm_cpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
+    gemm_cpu(TA, TB, M, N, K, ALPHA, A, lda, B, ldb, BETA, C, ldc);
 }
 
 
@@ -96,305 +103,321 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 //--------------------------------------------
 
 
-static inline unsigned char xnor(unsigned char a, unsigned char b) {
-    //return a == b;
-    return !(a^b);
+static inline unsigned char xnor(unsigned char const a, unsigned char const b) {
+    // return a == b;
+    return !(a ^ b);
 }
+
 
 // INT-32
-static inline uint32_t get_bit_int32(uint32_t const*const src, size_t index) {
-    size_t src_i = index / 32;
-    int src_shift = index % 32;
-    unsigned char val = (src[src_i] & (1 << src_shift)) > 0;
-    return val;
-}
-
-static inline uint32_t xnor_int32(uint32_t a, uint32_t b) {
-    return ~(a^b);
-}
-
-static inline uint64_t xnor_int64(uint64_t a, uint64_t b) {
-    return ~(a^b);
+static inline uint32_t get_bit_int32(uint32_t const * const src, size_t const index) {
+    size_t const src_i = index / 32;
+    int const src_shift = index % 32;
+    return (src[src_i] & (1 << src_shift)) > 0;
 }
 
 
-static inline uint32_t fill_bit_int32(char src) {
-    if (src == 0) return 0x00000000;
-    else return  0xFFFFFFFF;
+static inline uint32_t xnor_int32(uint32_t const a, uint32_t const b) {
+    return ~(a ^ b);
 }
 
-static inline uint64_t fill_bit_int64(char src) {
-    if (src == 0) return 0x0000000000000000;
-    else return  0xFFFFFFFFFFFFFFFF;
+
+static inline uint64_t xnor_int64(uint64_t const a, uint64_t const b) {
+    return ~(a ^ b);
 }
+
+
+static inline uint32_t fill_bit_int32(char const src) {
+    if (src == 0) {
+        return 0x00000000;
+    }
+    return  0xFFFFFFFF;
+}
+
+
+static inline uint64_t fill_bit_int64(char const src) {
+    if (src == 0) {
+        return 0x0000000000000000;
+    }
+    return 0xFFFFFFFFFFFFFFFF;
+}
+
 
 void binary_int32_printf(uint32_t src) {
-    int i;
-    for (i = 0; i < 32; ++i) {
-        if (src & 1) printf("1");
-        else printf("0");
-        src = src >> 1;
+    for (int i = 0; i < 32; ++i) {
+        if (src & 1) {
+            printf("1");
+        } else {
+            printf("0");
+        }
+        src >>= 1;
     }
     printf("\n");
 }
+
 
 void binary_int64_printf(uint64_t src) {
-    int i;
-    for (i = 0; i < 64; ++i) {
-        if (src & 1) printf("1");
-        else printf("0");
-        src = src >> 1;
+    for (int i = 0; i < 64; ++i) {
+        if (src & 1) {
+            printf("1");
+        } else {
+            printf("0");
+        }
+        src >>= 1;
     }
     printf("\n");
 }
 
-/*
-void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
-{
-    int *count_arr = calloc(M*N, sizeof(int));
 
-    int i, j, k;
-    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
-        for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-            char a_bit = get_bit(A, i*lda + k);
-
-            for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
-                char b_bit = get_bit(B, k*ldb + j);
-                count_arr[i*ldc + j] += xnor(a_bit, b_bit);
-            }
-        }
-    }
-
-    for (i = 0; i < M; ++i) {
-        float mean_val = mean_arr[i];
-        for (j = 0; j < N; ++j) {
-            C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
-        }
-    }
-    free(count_arr);
-}
-*/
-
-/*
-void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
-{
-    int *count_arr = calloc(M*N, sizeof(int));
-
-    int i, j, k;
-    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
-        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
-            for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                char a_bit = get_bit(A, i*lda + k);
-                char b_bit = get_bit(B, j*ldb + k);
-                count_arr[i*ldc + j] += xnor(a_bit, b_bit);
-            }
-        }
-    }
-
-    for (i = 0; i < M; ++i) {
-        float mean_val = mean_arr[i];
-        for (j = 0; j < N; ++j) {
-            C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
-        }
-    }
-    free(count_arr);
-}
-*/
-
-/*
-void gemm_nn_custom_bin_mean(int M, int N, int K, float ALPHA_UNUSED,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
-{
-    int *count_arr = calloc(M*N, sizeof(int));
-
-    int i;
-
-#pragma omp parallel for
-    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
-        int j, k, h;
-        for (k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-            const char a_bit = get_bit(A, i*lda + k);
-            uint64_t a_bit64 = fill_bit_int64(a_bit);
-            int  k_ldb = k*ldb;
-
-            for (j = 0; j < N; j += 64) { // out_h*out_w - one channel output size [169 - 173056]
-                if ((N - j > 64) && (k_ldb % 8 == 0)) {
-                    uint64_t b_bit64 = *((uint64_t *)(B + (k_ldb + j) / 8));
-                    uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
-                    //printf("\n %d \n",__builtin_popcountll(c_bit64)); // gcc
-                    printf("\n %d \n", __popcnt64(c_bit64));    // msvs
-
-                    int h;
-                    for (h = 0; h < 64; ++h)
-                        if ((c_bit64 >> h) & 1) count_arr[i*ldc + j + h] += 1;
-
-                    //binary_int64_printf(a_bit64);
-                    //binary_int64_printf(b_bit64);
-                    //binary_int64_printf(c_bit64);
-                }
-                else {
-                    for (; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
-                        char b_bit = get_bit(B, k_ldb + j);
-                        if (xnor(a_bit, b_bit)) count_arr[i*ldc + j] += 1;
-                    }
-                }
-
-            }
-        }
-    }
-
-    if (mean_arr) {
-        //int K_2 = K / 2;
-        for (i = 0; i < M; ++i) {
-            float mean_val = mean_arr[i];
-            //float mean_val2 = 2 * mean_val;
-            for (j = 0; j < N; ++j) {
-                C[i*ldc + j] = (2 * count_arr[i*ldc + j] - K) * mean_val;
-                //C[i*ldc + j] = (count_arr[i*ldc + j] - K_2) *mean_val2;
-            }
-        }
-    }
-    else {
-        for (i = 0; i < M; ++i) {
-            for (j = 0; j < N; ++j) {
-                C[i*ldc + j] = count_arr[i*ldc + j] - K / 2;
-            }
-        }
-    }
-
-    free(count_arr);
-
-    //getchar();
-}
-*/
+// void gemm_nn_custom_bin_mean(int const M, int const N, int const K,
+//                              float const ALPHA_UNUSED,
+//                              unsigned char * const A, int const lda,
+//                              unsigned char * const B, int const ldb,
+//                              float * const C, int const ldc, float const * const mean_arr)
+// {
+//     int * const count_arr = calloc(M * N, sizeof(int));
+//
+//     for (int i = 0; i < M; ++i) {  // l.n - filters [16 - 55 - 1024]
+//         for (int k = 0; k < K; ++k) {  // l.size * l.size * l.c - one filter size [27 - 9216]
+//             char a_bit = get_bit(A, i * lda + k);
+//
+//             for (int j = 0; j < N; ++j) {  // out_h * out_w - one channel output size [169 - 173056]
+//                 char b_bit = get_bit(B, k * ldb + j);
+//                 count_arr[i * ldc + j] += xnor(a_bit, b_bit);
+//             }
+//         }
+//     }
+//
+//     for (int i = 0; i < M; ++i) {
+//         float const mean_val = mean_arr[i];
+//         for (int j = 0; j < N; ++j) {
+//             C[i * ldc + j] = (2 * count_arr[i * ldc + j] - K) * mean_val;
+//         }
+//     }
+//     free(count_arr);
+// }
 
 
-/*
-void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
-{
-    int i;
+// void gemm_nn_custom_bin_mean_transposed(int const M, int const N, int const K,
+//                                         float const ALPHA_UNUSED,
+//                                         unsigned char * const A, int const lda,
+//                                         unsigned char * const B, int const ldb,
+//                                         float * const C, int const ldc, float const * const mean_arr)
+// {
+//     int * const count_arr = calloc(M * N, sizeof(int));
+//
+//     for (int i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
+//         for (int j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+//             for (int k = 0; k < K; ++k) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+//                 char a_bit = get_bit(A, i * lda + k);
+//                 char b_bit = get_bit(B, j * ldb + k);
+//                 count_arr[i * ldc + j] += xnor(a_bit, b_bit);
+//             }
+//         }
+//     }
+//
+//     for (int i = 0; i < M; ++i) {
+//         float const mean_val = mean_arr[i];
+//         for (int j = 0; j < N; ++j) {
+//             C[i * ldc + j] = (2 * count_arr[i * ldc + j] - K) * mean_val;
+//         }
+//     }
+//     free(count_arr);
+// }
 
-#pragma omp parallel for
-    for (i = 0; i < M; ++i) {   // l.n - filters [16 - 55 - 1024]
-        int j, k, h;
-        float mean_val = mean_arr[i];
 
-        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
-            int count = 0;
+// void gemm_nn_custom_bin_mean(int const M, int const N, int const K,
+//                              float const ALPHA_UNUSED,
+//                              unsigned char * const A, int const lda,
+//                              unsigned char * const B, int const ldb,
+//                              float * const C, int const ldc,
+//                              float const * const mean_arr)
+// {
+//     int * const count_arr = calloc(M * N, sizeof(int));
+//
+// #pragma omp parallel for
+//     for (int i = 0; i < M; ++i) {  // l.n - filters [16 - 55 - 1024]
+//         for (int k = 0; k < K; ++k) {  // l.size*l.size*l.c - one filter size [27 - 9216]
+//             char const a_bit = get_bit(A, i * lda + k);
+//             uint64_t const a_bit64 = fill_bit_int64(a_bit);
+//             int const k_ldb = k * ldb;
+//
+//             for (int j = 0; j < N; j += 64) {  // out_h*out_w - one channel output size [169 - 173056]
+//                 if ((N - j > 64) && (k_ldb % 8 == 0)) {
+//                     uint64_t const b_bit64 = *(uint64_t *)(B + (k_ldb + j) / 8);
+//                     uint64_t const c_bit64 = xnor_int64(a_bit64, b_bit64);
+//                     // printf("\n %d \n",__builtin_popcountll(c_bit64));  // gcc
+//                     printf("\n %d \n", __popcnt64(c_bit64));  // msvs
+//
+//                     for (int h = 0; h < 64; ++h) {
+//                         if ((c_bit64 >> h) & 1) {
+//                             count_arr[i * ldc + j + h] += 1;
+//                         }
+//                     }
+//
+//                     // binary_int64_printf(a_bit64);
+//                     // binary_int64_printf(b_bit64);
+//                     // binary_int64_printf(c_bit64);
+//                 } else {
+//                     for (; j < N; ++j) {  // out_h * out_w - one channel output size [169 - 173056]
+//                         char const b_bit = get_bit(B, k_ldb + j);
+//                         if (xnor(a_bit, b_bit)) {
+//                             count_arr[i * ldc + j] += 1;
+//                         }
+//                     }
+//                 }
+//
+//             }
+//         }
+//     }
+//
+//     if (mean_arr !== NULL) {
+//         // int K_2 = K / 2;
+//         for (int i = 0; i < M; ++i) {
+//             float const mean_val = mean_arr[i];
+//             // float const mean_val2 = 2 * mean_val;
+//             for (j = 0; j < N; ++j) {
+//                 C[i * ldc + j] = (2 * count_arr[i * ldc + j] - K) * mean_val;
+//                 // C[i * ldc + j] = (count_arr[i * ldc + j] - K_2) * mean_val2;
+//             }
+//         }
+//     } else {
+//         for (int i = 0; i < M; ++i) {
+//             for (j = 0; j < N; ++j) {
+//                 C[i * ldc + j] = count_arr[i * ldc + j] - K / 2;
+//             }
+//         }
+//     }
+//
+//     free(count_arr);
+//
+//     // getchar();
+// }
 
-            for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));
-                uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
-                uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
 
-#ifdef WIN32
-                int tmp_count = __popcnt64(c_bit64);
-#else
-                int tmp_count = __builtin_popcountll(c_bit64);
-#endif
+// void gemm_nn_custom_bin_mean_transposed(int const M, int const N, int const K,
+//                                         float const ALPHA_UNUSED,
+//                                         unsigned char * const A, int const lda,
+//                                         unsigned char * const B, int const ldb,
+//                                         float * const C, int const ldc,
+//                                         float const * const mean_arr)
+// {
+// #pragma omp parallel for
+//     for (int i = 0; i < M; ++i) {  // l.n - filters [16 - 55 - 1024]
+//         float const mean_val = mean_arr[i];
+//
+//         for (int j = 0; j < N; ++j) {  // out_h * out_w - one channel output size [169 - 173056]
+//             int count = 0;
+//
+//             for (int k = 0; k < K; k += 64) {   // l.size * l.size * l.c - one filter size [27 - 9216]
+//                 uint64_t const a_bit64 = *(uint64_t *)(A + (i * lda + k) / 8);
+//                 uint64_t const b_bit64 = *(uint64_t *)(B + (j * ldb + k) / 8);
+//                 uint64_t const c_bit64 = xnor_int64(a_bit64, b_bit64);
+//
+// #ifdef WIN32
+//                 int tmp_count = __popcnt64(c_bit64);
+// #else
+//                 int tmp_count = __builtin_popcountll(c_bit64);
+// #endif
+//
+//                 if (K - k < 64) {
+//                     tmp_count -= 64 - (K - k);  // remove extra bits
+//                 }
+//                 count += tmp_count;
+//                 // binary_int64_printf(c_bit64);
+//                 // printf(", count = %d \n\n", tmp_count);
+//             }
+//
+//             C[i * ldc + j] = (2 * count - K) * mean_val;
+//         }
+//     }
+// }
 
-                if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
-                count += tmp_count;
-                //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
-            }
-
-            C[i*ldc + j] = (2 * count - K) * mean_val;
-        }
-    }
-}
-*/
 
 //----------------------------
 
+
 // is not used
-void transpose_32x32_bits_my(uint32_t *A, uint32_t *B, int lda, int ldb)
+void transpose_32x32_bits_my(uint32_t const * const A, uint32_t * const B,
+                             int const lda, int const ldb)
 {
-    unsigned int x, y;
-    for (y = 0; y < 32; ++y) {
-        for (x = 0; x < 32; ++x) {
-            if (A[y * lda] & ((uint32_t)1 << x)) B[x * ldb] |= (uint32_t)1 << y;
+    for (unsigned int y = 0; y < 32; ++y) {
+        for (unsigned int x = 0; x < 32; ++x) {
+            if (A[y * lda] & ((uint32_t)1 << x)) {
+                B[x * ldb] |= (uint32_t)1 << y;
+            }
         }
     }
 }
 
+
 #ifndef GPU
-uint8_t reverse_8_bit(uint8_t a) {
+uint8_t reverse_8_bit(uint8_t const a) {
     return ((a * 0x0802LU & 0x22110LU) | (a * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
 }
 
-uint32_t reverse_32_bit(uint32_t a)
+
+uint32_t reverse_32_bit(uint32_t const a)
 {
-    // unsigned int __rbit(unsigned int val) // for ARM    //__asm__("rbit %0, %1\n" : "=r"(output) : "r"(input));
+    // unsigned int __rbit(unsigned int val)  // for ARM    //__asm__("rbit %0, %1\n" : "=r"(output) : "r"(input));
     return (reverse_8_bit(a >> 24) << 0) |
         (reverse_8_bit(a >> 16) << 8) |
         (reverse_8_bit(a >> 8) << 16) |
         (reverse_8_bit(a >> 0) << 24);
 }
 
-#define swap(a0, a1, j, m) t = (a0 ^ (a1 >>j)) & m; a0 = a0 ^ t; a1 = a1 ^ (t << j);
 
-void transpose32_optimized(uint32_t A[32]) {
-    int j, k;
-    unsigned m, t;
+#define swap(a0, a1, j, m) t = (a0 ^ (a1 >>j)) & m; a0 ^= t; a1 ^= t << j;
 
-    //m = 0x0000FFFF;
-    //for (j = 16; j != 0; j = j >> 1, m = m ^ (m << j)) {
-    //    for (k = 0; k < 32; k = (k + j + 1) & ~j) {
-    //        t = (A[k] ^ (A[k + j] >> j)) & m;
+
+static inline void transpose32_swap(uint32_t * const A, int const j, unsigned int const m) {
+    unsigned int t;
+    for (int k = 0; k < 32; k = (k + j + 1) & ~j) {
+        swap(A[k], A[k + j], j, m);
+    }
+}
+
+
+/**
+ * @param A array of length 32
+ */
+void transpose32_optimized(uint32_t * A) {
+    // unsigned int m = 0x0000FFFF;
+    // for (int j = 16; j != 0; j = j >> 1, m = m ^ (m << j)) {
+    //    for (int k = 0; k < 32; k = (k + j + 1) & ~j) {
+    //        unsigned int t = (A[k] ^ (A[k + j] >> j)) & m;
     //        A[k] = A[k] ^ t;
     //        A[k + j] = A[k + j] ^ (t << j);
     //    }
-    //}
+    // }
 
-    j = 16;
-    m = 0x0000FFFF;
-    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
-
-    j = 8;
-    m = 0x00ff00ff;
-    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
-
-    j = 4;
-    m = 0x0f0f0f0f;
-    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
-
-    j = 2;
-    m = 0x33333333;
-    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
-
-    j = 1;
-    m = 0x55555555;
-    for (k = 0; k < 32; k = (k + j + 1) & ~j) { swap(A[k], A[k + j], j, m); }
+    transpose32_swap(A, 16, 0x0000ffff);
+    transpose32_swap(A, 8, 0x00ff00ff);
+    transpose32_swap(A, 4, 0x0f0f0f0f);
+    transpose32_swap(A, 2, 0x33333333);
+    transpose32_swap(A, 1, 0x55555555);
 
     // reverse Y
-    for (j = 0; j < 16; ++j) {
-        uint32_t tmp = A[j];
+    for (int j = 0; j < 16; ++j) {
+        uint32_t const tmp = A[j];
         A[j] = reverse_32_bit(A[31 - j]);
         A[31 - j] = reverse_32_bit(tmp);
     }
 }
 
-void transpose_32x32_bits_reversed_diagonale(uint32_t *A, uint32_t *B, int m, int n)
+
+void transpose_32x32_bits_reversed_diagonale(uint32_t * A, uint32_t * B, int m, int n)
 {
-    unsigned A_tmp[32];
-    int i;
+    unsigned int A_tmp[32];
     #pragma unroll
-    for (i = 0; i < 32; ++i) A_tmp[i] = A[i * m];
+    for (int i = 0; i < 32; ++i) {
+        A_tmp[i] = A[i * m];
+    }
     transpose32_optimized(A_tmp);
     #pragma unroll
-    for (i = 0; i < 32; ++i) B[i*n] = A_tmp[i];
+    for (int i = 0; i < 32; ++i) {
+        B[i * n] = A_tmp[i];
+    }
 }
 
 
