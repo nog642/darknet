@@ -40,7 +40,7 @@
 #include "yolo_layer.h"
 #include "gaussian_yolo_layer.h"
 
-list* read_cfg(char* filename);
+list * read_cfg(char const * filename);
 
 
 LAYER_TYPE string_to_layer_type(char* type)
@@ -1148,23 +1148,23 @@ void parse_net_options(list* options, network* net)
 }
 
 
-int is_network(section* s)
+int is_network(section * s)
 {
     return (strcmp(s->type, "[net]") == 0
             || strcmp(s->type, "[network]") == 0);
 }
 
 
-network parse_network_cfg(char* filename)
+network parse_network_cfg(char const * const filename)
 {
     return parse_network_cfg_custom(filename, 0, 0);
 }
 
 
-network parse_network_cfg_custom(char* filename, int batch, int time_steps)
+network parse_network_cfg_custom(char const * const filename, int batch, int time_steps)
 {
-    list* sections = read_cfg(filename);
-    node* n = sections->front;
+    list * sections = read_cfg(filename);
+    node * n = sections->front;
     if (!n) {
         error("Config file has no sections");
     }
@@ -1485,15 +1485,15 @@ network parse_network_cfg_custom(char* filename, int batch, int time_steps)
 }
 
 
-list* read_cfg(char* filename)
+list * read_cfg(char const * const filename)
 {
-    FILE* file = fopen(filename, "r");
+    FILE * file = fopen(filename, "r");
     if (file == NULL) {
         file_error(filename);
     }
-    char* line;
+    char * line;
     int nu = 0;
-    list* sections = make_list();
+    list * sections = make_list();
     section* current = 0;
     while ((line = fgetl(file)) != 0) {
         nu++;

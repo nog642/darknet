@@ -34,7 +34,7 @@ LIB_API void find_replace(const char* str, char* orig, char* rep, char* output);
 void replace_image_to_label(const char* input_path, char* output_path);
 void error(const char *s);
 void malloc_error();
-void file_error(char *s);
+void file_error(char const * s);
 void strip(char *s);
 void strip_args(char *s);
 void strip_char(char *s, char bad);

@@ -35,11 +35,11 @@ void activate_array_swish(float const * x, int n, float * output_sigmoid, float 
 
 void activate_array_mish(float const * x, int n, float * activation_input, float * output);
 
-void activate_array_normalize_channels(float * x, int n, int batch, int channels, int wh_step, float * output);
+void activate_array_normalize_channels(float const * x, int n, int batch, int channels, int wh_step, float * output);
 
-void activate_array_normalize_channels_softmax(float * x, int n, int batch, int channels, int wh_step, float * output);
+void activate_array_normalize_channels_softmax(float const * x, int n, int batch, int channels, int wh_step, float * output);
 
-void gradient_array_normalize_channels_softmax(float * x, int n, int batch, int channels, int wh_step, float * delta);
+void gradient_array_normalize_channels_softmax(float const * x, int n, int batch, int channels, int wh_step, float * delta);
 
 #ifdef GPU
 

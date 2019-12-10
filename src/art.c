@@ -12,7 +12,7 @@
 #endif
 
 
-void demo_art(char * cfgfile, char * weightfile, int cam_index)
+void demo_art(char const * const cfgfile, char * weightfile, int cam_index)
 {
 #ifdef OPENCV
     network net = parse_network_cfg(cfgfile);
@@ -22,9 +22,7 @@ void demo_art(char * cfgfile, char * weightfile, int cam_index)
     set_batch_network(&net, 1);
 
     srand(2222222);
-    cap_cv * cap;
-
-    cap = get_capture_webcam(cam_index);
+    cap_cv * cap = get_capture_webcam(cam_index);
 
     char const * const window = "ArtJudgementBot9000!!!";
     if (!cap) {
@@ -35,8 +33,8 @@ void demo_art(char * cfgfile, char * weightfile, int cam_index)
     int const n = sizeof(idx) / sizeof(idx[0]);
 
     while (1) {
-        image in = get_image_from_stream_cpp(cap);
-        image in_s = resize_image(in, net.w, net.h);
+        image const in = get_image_from_stream_cpp(cap);
+        image const in_s = resize_image(in, net.w, net.h);
         show_image(in, window);
 
         float const * const p = network_predict(net, in_s.data);
@@ -51,12 +49,11 @@ void demo_art(char * cfgfile, char * weightfile, int cam_index)
                 score = s;
             }
         }
-        score = score;
         printf("I APPRECIATE THIS ARTWORK: %10.7f%%\n", score * 100);
         printf("[");
 	    int const upper = 30;
         for (int i = 0; i < upper; ++i) {
-            printf("%c", ((i + .5) < score * upper) ? 219 : ' ');
+            printf("%c", (i + .5 < score * upper) ? 219 : ' ');
         }
         printf("]\n");
 

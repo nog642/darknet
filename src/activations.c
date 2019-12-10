@@ -212,84 +212,96 @@ void activate_array_mish(float const * const x, int const n, float * const activ
      }
 }
 
-void activate_array_normalize_channels(float *x, const int n, int batch, int channels, int wh_step, float *output)
+
+void activate_array_normalize_channels(float const * const x, int const n,
+                                       int const batch, int const channels,
+                                       int const wh_step, float * const output)
 {
-    int size = n / channels;
+    int const size = n / channels;
 
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < size; ++i) {
-        int wh_i = i % wh_step;
-        int b = i / wh_step;
+    for (int i = 0; i < size; ++i) {
+        int const wh_i = i % wh_step;
+        int const b = i / wh_step;
 
-        const float eps = 0.0001;
+        float const eps = 0.0001;
         if (i < size) {
             float sum = eps;
-            int k;
-            for (k = 0; k < channels; ++k) {
-                float val = x[wh_i + k * wh_step + b*wh_step*channels];
-                if (val > 0) sum += val;
+            for (int k = 0; k < channels; ++k) {
+                float const val = x[wh_i + k * wh_step + b * wh_step * channels];
+                if (val > 0) {
+                    sum += val;
+                }
             }
-            for (k = 0; k < channels; ++k) {
-                float val = x[wh_i + k * wh_step + b*wh_step*channels];
-                if (val > 0) val = val / sum;
-                else val = 0;
-                output[wh_i + k * wh_step + b*wh_step*channels] = val;
+            for (int k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b * wh_step * channels];
+                if (val > 0) {
+                    val /= sum;
+                } else {
+                    val = 0;
+                }
+                output[wh_i + k * wh_step + b * wh_step * channels] = val;
             }
         }
     }
 }
 
-void activate_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *output)
+
+void activate_array_normalize_channels_softmax(float const * const x,
+                                               int const n, int const batch,
+                                               int const channels,
+                                               int const wh_step,
+                                               float * const output)
 {
-    int size = n / channels;
+    int const size = n / channels;
 
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < size; ++i) {
-        int wh_i = i % wh_step;
-        int b = i / wh_step;
+    for (int i = 0; i < size; ++i) {
+        int const wh_i = i % wh_step;
+        int const b = i / wh_step;
 
-        const float eps = 0.0001;
+        float const eps = 0.0001;
         if (i < size) {
             float sum = eps;
-            int k;
-            for (k = 0; k < channels; ++k) {
-                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            for (int k = 0; k < channels; ++k) {
+                float const val = x[wh_i + k * wh_step + b * wh_step * channels];
                 sum += expf(val);
             }
-            for (k = 0; k < channels; ++k) {
-                float val = x[wh_i + k * wh_step + b*wh_step*channels];
+            for (int k = 0; k < channels; ++k) {
+                float val = x[wh_i + k * wh_step + b * wh_step * channels];
                 val = expf(val) / sum;
-                output[wh_i + k * wh_step + b*wh_step*channels] = val;
+                output[wh_i + k * wh_step + b * wh_step * channels] = val;
             }
         }
     }
 }
 
-void gradient_array_normalize_channels_softmax(float *x, const int n, int batch, int channels, int wh_step, float *delta)
+
+void gradient_array_normalize_channels_softmax(float const * const x,
+                                               int const n, int const batch,
+                                               int const channels,
+                                               int const wh_step,
+                                               float * const delta)
 {
-    int size = n / channels;
+    int const size = n / channels;
 
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < size; ++i) {
-        int wh_i = i % wh_step;
-        int b = i / wh_step;
+    for (int i = 0; i < size; ++i) {
+        int const wh_i = i % wh_step;
+        int const b = i / wh_step;
 
-        //const float eps = 0.0001;
+        // const float eps = 0.0001;
         if (i < size) {
-            float grad = 0;// eps;
-            int k;
-            for (k = 0; k < channels; ++k) {
-                float out = x[wh_i + k * wh_step + b*wh_step*channels];
-                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
-                grad += out*d;
+            float grad = 0;  // eps;
+            for (int k = 0; k < channels; ++k) {
+                float const out = x[wh_i + k * wh_step + b * wh_step * channels];
+                float const d = delta[wh_i + k * wh_step + b * wh_step * channels];
+                grad += out * d;
             }
-            for (k = 0; k < channels; ++k) {
-                float d = delta[wh_i + k * wh_step + b*wh_step*channels];
-                d = d * grad;
-                delta[wh_i + k * wh_step + b*wh_step*channels] = d;
+            for (int k = 0; k < channels; ++k) {
+                float d = delta[wh_i + k * wh_step + b * wh_step * channels];
+                d *= grad;
+                delta[wh_i + k * wh_step + b * wh_step * channels] = d;
             }
         }
     }

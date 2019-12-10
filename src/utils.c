@@ -298,17 +298,20 @@ void error(const char *s)
     exit(EXIT_FAILURE);
 }
 
+
 void malloc_error()
 {
     fprintf(stderr, "Malloc error\n");
     exit(EXIT_FAILURE);
 }
 
-void file_error(char *s)
+
+void file_error(char const * const s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
     exit(EXIT_FAILURE);
 }
+
 
 list *split_str(char *s, char delim)
 {

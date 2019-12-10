@@ -916,7 +916,7 @@ typedef struct list list;
 LIB_API network * load_network(char * cfg, char * weights, int clear);
 LIB_API network * load_network_custom(char * cfg, char * weights, int clear, int batch);
 LIB_API network * load_network(char * cfg, char * weights, int clear);
-list * read_cfg(char * filename);
+list * read_cfg(char const * filename);
 
 
 // network.c
