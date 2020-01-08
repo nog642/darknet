@@ -736,7 +736,7 @@ int nms_comparator(void const * const pa, void const * const pb)
 }
 
 
-void do_nms_sort_v2(box const * const boxes, float * const * const probs, int const total, int const classes, float const thresh)
+void do_nms_sort_v2(box const * const boxes, float * * const probs, int const total, int const classes, float const thresh)
 {
     sortable_bbox * s = malloc(total * sizeof(sortable_bbox));
     for (int i = 0; i < total; ++i) {

@@ -387,24 +387,28 @@ void free_ptrs(void **ptrs, int n)
 }
 
 
-char* fgetl(FILE* fp)
+char * fgetl(FILE * const fp)
 {
     if (feof(fp)) {
-        return 0;
+        return NULL;
     }
     size_t size = 512;
-    char* line = (char*)malloc(size * sizeof(char));
-    if (!fgets(line, size, fp)) {
+    char * line = malloc(size * sizeof(char));
+    if (line == NULL) {
+        malloc_error();
+    }
+
+    if (fgets(line, size, fp) == NULL) {
         free(line);
         return 0;
     }
 
     size_t curr = strlen(line);
 
-    while ((line[curr - 1] != '\n') && !feof(fp)) {
+    while (line[curr - 1] != '\n' && !feof(fp)) {
         if (curr == size - 1) {
             size *= 2;
-            line = (char*)realloc(line, size * sizeof(char));
+            line = (char *)realloc(line, size * sizeof(char));
             if (!line) {
                 printf("%ld\n", size);
                 malloc_error();
@@ -433,26 +437,35 @@ char* fgetl(FILE* fp)
 }
 
 
-int read_int(int fd)
+int read_int(int const fd)
 {
     int n = 0;
     int next = read(fd, &n, sizeof(int));
-    if(next <= 0) return -1;
+    if (next <= 0) {
+        return -1;
+    }
     return n;
 }
 
-void write_int(int fd, int n)
+
+void write_int(int const fd, int n)
 {
+    // TODO: what is the point of n?
     int next = write(fd, &n, sizeof(int));
-    if(next <= 0) error("read failed");
+    if (next <= 0) {
+        error("read failed");
+    }
 }
 
-int read_all_fail(int fd, char *buffer, size_t bytes)
+
+int read_all_fail(int const fd, char * const buffer, size_t const bytes)
 {
     size_t n = 0;
-    while(n < bytes){
-        int next = read(fd, buffer + n, bytes-n);
-        if(next <= 0) return 1;
+    while (n < bytes) {
+        int const next = read(fd, buffer + n, bytes - n);
+        if (next <= 0) {
+            return 1;
+        }
         n += next;
     }
     return 0;

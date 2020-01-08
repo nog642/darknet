@@ -192,7 +192,7 @@ float get_current_rate(network net)
 }
 
 
-char* get_layer_string(LAYER_TYPE a)
+char * get_layer_string(LAYER_TYPE const a)
 {
     switch (a) {
         case CONVOLUTIONAL:
@@ -1221,14 +1221,14 @@ void fuse_conv_batchnorm(network net)
             if (l->batch_normalize) {
                 for (int f = 0; f < l->n; ++f) {
                     // l->biases[f] -= (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
-                    l->biases[f] -= (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f] + .000001));
+                    l->biases[f] -= (double)l->scales[f] * l->rolling_mean[f] / sqrt((double)l->rolling_variance[f] + .000001);
 
                     size_t const filter_size = l->size * l->size * l->c / l->groups;
                     for (int i = 0; i < filter_size; ++i) {
-                        int const w_index = f*filter_size + i;
+                        int const w_index = f * filter_size + i;
 
                         // l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
-                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f] + .000001));
+                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / sqrt((double)l->rolling_variance[f] + .000001);
                     }
                 }
 
@@ -1255,7 +1255,7 @@ void forward_blank_layer(layer l, network_state state)
 void calculate_binary_weights(network net)
 {
     for (int j = 0; j < net.n; ++j) {
-        layer * l = &net.layers[j];
+        layer * const l = &net.layers[j];
 
         if (l->type == CONVOLUTIONAL) {
             // printf(" Merges Convolutional-%d and batch_norm \n", j);
@@ -1276,7 +1276,7 @@ void calculate_binary_weights(network net)
 #ifdef GPU
                 // fuse conv_xnor + shortcut -> conv_xnor
                 if ((j + 1) < net.n && net.layers[j].type == CONVOLUTIONAL) {
-                    layer* sc = &net.layers[j + 1];
+                    layer * sc = &net.layers[j + 1];
                     if (sc->type == SHORTCUT && sc->w == sc->out_w && sc->h == sc->out_h && sc->c == sc->out_c) {
                         l->bin_conv_shortcut_in_gpu = net.layers[net.layers[j + 1].index].output_gpu;
                         l->bin_conv_shortcut_out_gpu = net.layers[j + 1].output_gpu;

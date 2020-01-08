@@ -715,70 +715,74 @@ int is_avx() {
     return result;
 }
 
+
 int is_fma_avx2() {
     static int result = -1;
     if (result == -1) {
         check_cpu_features();
         result = HW_FMA3 && HW_AVX2;
-        if (result == 1) printf(" Used FMA & AVX2 \n");
-        else printf(" Not used FMA & AVX2 \n");
+        if (result == 1) {
+            printf(" Used FMA & AVX2 \n");
+        } else {
+            printf(" Not used FMA & AVX2 \n");
+        }
     }
     return result;
 }
 
+
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide
 void gemm_nn(int M, int N, int K, float ALPHA,
-    float *A, int lda,
-    float *B, int ldb,
-    float *C, int ldc)
+             float * A, int lda,
+             float * B, int ldb,
+             float * C, int ldc)
 {
-    int i, j, k;
-    if (is_avx() == 1) {    // AVX
-        for (i = 0; i < M; ++i) {
+    int j, k;
+    if (is_avx() == 1) {  // AVX
+        for (int i = 0; i < M; ++i) {
             for (k = 0; k < K; ++k) {
-                float A_PART = ALPHA*A[i*lda + k];
-                __m256 a256, b256, c256, result256;    // AVX
+                float A_PART = ALPHA * A[i * lda + k];
+                __m256 a256, b256, c256, result256;  // AVX
                 a256 = _mm256_set1_ps(A_PART);
                 for (j = 0; j < N - 8; j += 8) {
-                    b256 = _mm256_loadu_ps(&B[k*ldb + j]);
-                    c256 = _mm256_loadu_ps(&C[i*ldc + j]);
+                    b256 = _mm256_loadu_ps(&B[k * ldb + j]);
+                    c256 = _mm256_loadu_ps(&C[i * ldc + j]);
                     // FMA - Intel Haswell (2013), AMD Piledriver (2012)
-                    //result256 = _mm256_fmadd_ps(a256, b256, c256);
+                    // result256 = _mm256_fmadd_ps(a256, b256, c256);
                     result256 = _mm256_mul_ps(a256, b256);
                     result256 = _mm256_add_ps(result256, c256);
-                    _mm256_storeu_ps(&C[i*ldc + j], result256);
+                    _mm256_storeu_ps(&C[i * ldc + j], result256);
                 }
 
                 int prev_end = (N % 8 == 0) ? (N - 8) : (N / 8) * 8;
-                for (j = prev_end; j < N; ++j)
-                    C[i*ldc + j] += A_PART*B[k*ldb + j];
+                for (j = prev_end; j < N; ++j) {
+                    C[i * ldc + j] += A_PART * B[k * ldb + j];
+                }
             }
         }
-    }
-    else {
-        for (i = 0; i < M; ++i) {
+    } else {
+        for (int i = 0; i < M; ++i) {
             for (k = 0; k < K; ++k) {
                 PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
                 for (j = 0; j < N; ++j) {
-                    C[i*ldc + j] += A_PART*B[k*ldb + j];
+                    C[i * ldc + j] += A_PART * B[k * ldb + j];
                 }
-                /* // SSE
-                __m128 a128, b128, c128, result128;    // SSE
-                a128 = _mm_set1_ps(A_PART);
-                for (j = 0; j < N - 4; j += 4) {
-                b128 = _mm_loadu_ps(&B[k*ldb + j]);
-                c128 = _mm_loadu_ps(&C[i*ldc + j]);
-                //result128 = _mm_fmadd_ps(a128, b128, c128);
-                result128 = _mm_mul_ps(a128, b128);
-                result128 = _mm_add_ps(result128, c128);
-                _mm_storeu_ps(&C[i*ldc + j], result128);
-                }
-
-                int prev_end = (N % 4 == 0) ? (N - 4) : (N / 4) * 4;
-                for (j = prev_end; j < N; ++j){
-                C[i*ldc + j] += A_PART*B[k*ldb + j];
-                }
-                */
+                // // SSE
+                // __m128 a128, b128, c128, result128;    // SSE
+                // a128 = _mm_set1_ps(A_PART);
+                // for (j = 0; j < N - 4; j += 4) {
+                // b128 = _mm_loadu_ps(&B[k * ldb + j]);
+                // c128 = _mm_loadu_ps(&C[i * ldc + j]);
+                // // result128 = _mm_fmadd_ps(a128, b128, c128);
+                // result128 = _mm_mul_ps(a128, b128);
+                // result128 = _mm_add_ps(result128, c128);
+                // _mm_storeu_ps(&C[i * ldc + j], result128);
+                // }
+                //
+                // int prev_end = (N % 4 == 0) ? (N - 4) : (N / 4) * 4;
+                // for (j = prev_end; j < N; ++j) {
+                // C[i*ldc + j] += A_PART*B[k*ldb + j];
+                // }
             }
         }
     }
@@ -1225,11 +1229,10 @@ static inline int get_count_mula(__m256i count_sum) {
 // 5x times faster than gemm()-float32
 // further optimizations: do mean-mult only for the last layer
 void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
-    unsigned char *A, int lda,
-    unsigned char *B, int ldb,
-    float *C, int ldc, float *mean_arr)
+                                        unsigned char * A, int lda,
+                                        unsigned char * B, int ldb,
+                                        float * C, int ldc, float * mean_arr)
 {
-    int i;
 
 #if defined(_OPENMP)
     static int max_num_threads = 0;
@@ -1239,19 +1242,17 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     }
 #endif
 
-    //#pragma omp parallel for
-    //for (i = 0; i < M; ++i)
+    // #pragma omp parallel for
+    // for (i = 0; i < M; ++i) {
     #pragma omp parallel for
-    for (i = 0; i < (M/2)*2; i += 2)
-    {   // l.n - filters [16 - 55 - 1024]
+    for (int i = 0; i < M / 2 * 2; i += 2) {  // l.n - filters [16 - 55 - 1024]
         float mean_val_0 = mean_arr[i + 0];
         float mean_val_1 = mean_arr[i + 1];
         int j, k;
         //__m256i all_1 = _mm256_set1_epi8(255);
 
         //for (j = 0; j < N; ++j)
-        for (j = 0; j < (N/2)*2; j += 2)
-        { // out_h*out_w - one channel output size [169 - 173056]
+        for (j = 0; j < N / 2 * 2; j += 2) {  // out_h * out_w - one channel output size [169 - 173056]
             //int count = 0;
             const int bit_step = 256;
             __m256i count_sum_0 = _mm256_set1_epi8(0);
@@ -1259,7 +1260,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
             __m256i count_sum_2 = _mm256_set1_epi8(0);
             __m256i count_sum_3 = _mm256_set1_epi8(0);
 
-            for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+            for (k = 0; k < K; k += bit_step) {  // l.size * l.size * l.c - one filter size [27 - 9216]
 
                 __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + 0)*lda + k) / 8));
                 __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
@@ -1274,9 +1275,9 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
                 xnor_avx2_popcnt(a_bit256_1, b_bit256_0, &count_sum_2);
                 xnor_avx2_popcnt(a_bit256_1, b_bit256_1, &count_sum_3);
 
-                //count += popcnt256(c_bit256);
-                //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                // count += popcnt256(c_bit256);
+                // binary_int64_printf(c_bit64);
+                // printf(", count = %d \n\n", tmp_count);
             }
 
             int count_0 = get_count_mula(count_sum_0);
@@ -1284,57 +1285,51 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
             int count_2 = get_count_mula(count_sum_2);
             int count_3 = get_count_mula(count_sum_3);
 
-            const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+            int const f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
             count_0 = count_0 - f1;    // remove extra bits (from empty space for align only)
             count_1 = count_1 - f1;
             count_2 = count_2 - f1;
             count_3 = count_3 - f1;
-            C[i*ldc + (j + 0)] = (2 * count_0 - K) * mean_val_0;
-            C[i*ldc + (j + 1)] = (2 * count_1 - K) * mean_val_0;
-            C[(i + 1)*ldc + (j + 0)] = (2 * count_2 - K) * mean_val_1;
-            C[(i + 1)*ldc + (j + 1)] = (2 * count_3 - K) * mean_val_1;
+            C[i * ldc + (j + 0)] = (2 * count_0 - K) * mean_val_0;
+            C[i * ldc + (j + 1)] = (2 * count_1 - K) * mean_val_0;
+            C[(i + 1) * ldc + (j + 0)] = (2 * count_2 - K) * mean_val_1;
+            C[(i + 1) * ldc + (j + 1)] = (2 * count_3 - K) * mean_val_1;
         }
 
-        int i_d;
-        for (i_d = 0; i_d < 2; ++i_d)
-        {
+        for (int i_d = 0; i_d < 2; ++i_d) {
             float mean_val = mean_arr[i + i_d];
-            for (j = (N / 2) * 2; j < N; j += 1)
-            { // out_h*out_w - one channel output size [169 - 173056]
+            for (j = N / 2 * 2; j < N; j += 1) {  // out_h * out_w - one channel output size [169 - 173056]
                 const int bit_step = 256;
                 __m256i count_sum = _mm256_set1_epi8(0);
 
                 for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                    __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + i_d + 0)*lda + k) / 8));
-                    __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
+                    __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + i_d + 0) * lda + k) / 8));
+                    __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0) * ldb + k) / 8));
                     xnor_avx2_popcnt(a_bit256_0, b_bit256_0, &count_sum);
                 }
                 int count = get_count_mula(count_sum);
-                const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+                int const f1 = (K % bit_step == 0) ? 0 : (bit_step - K % bit_step);
                 count = count - f1;    // remove extra bits (from empty space for align only)
-                C[(i + i_d)*ldc + j] = (2 * count - K) * mean_val;
+                C[(i + i_d) * ldc + j] = (2 * count - K) * mean_val;
             }
         }
     }
 
-    for (i = (M / 2) * 2; i < M; i += 1)
-    {
+    for (int i = M / 2 * 2; i < M; i += 1) {
         float mean_val = mean_arr[i];
-        int j, k;
-        for (j = 0; j < N; j += 1)
-        { // out_h*out_w - one channel output size [169 - 173056]
+        for (int j = 0; j < N; j += 1) {  // out_h * out_w - one channel output size [169 - 173056]
             const int bit_step = 256;
             __m256i count_sum = _mm256_set1_epi8(0);
 
-            for (k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
-                __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + 0)*lda + k) / 8));
-                __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0)*ldb + k) / 8));
+            for (int k = 0; k < K; k += bit_step) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+                __m256i a_bit256_0 = _mm256_loadu_si256((__m256i *)(A + ((i + 0) * lda + k) / 8));
+                __m256i b_bit256_0 = _mm256_loadu_si256((__m256i *)(B + ((j + 0) * ldb + k) / 8));
                 xnor_avx2_popcnt(a_bit256_0, b_bit256_0, &count_sum);
             }
             int count = get_count_mula(count_sum);
-            const int f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
+            int const f1 = (K % bit_step == 0) ? 0 : (bit_step - (K % bit_step));
             count = count - f1;    // remove extra bits (from empty space for align only)
-            C[i*ldc + j] = (2 * count - K) * mean_val;
+            C[i * ldc + j] = (2 * count - K) * mean_val;
         }
     }
 }
@@ -1885,12 +1880,13 @@ void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
 }
 
 
-void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, int w, int h, int out_w, int out_h, int c,
-    int pad, int stride, int batch)
+void forward_maxpool_layer_avx(float * src, float * dst, int * indexes,
+                               int size, int w, int h, int out_w, int out_h,
+                               int c, int pad, int stride, int batch)
 {
 
-    const int w_offset = -pad / 2;
-    const int h_offset = -pad / 2;
+    int const w_offset = -pad / 2;
+    int const h_offset = -pad / 2;
     int b, k;
 
     for (b = 0; b < batch; ++b) {
@@ -1901,7 +1897,7 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
                 //for (j = 0; j < out_w; ++j) {
                 j = 0;
 
-                if(stride == 1 && is_avx() == 1) {
+                if (stride == 1 && is_avx() == 1) {
                     for (j = 0; j < out_w - 8 - (size - 1); j += 8) {
                         int out_index = j + out_w*(i + out_h*(k + c*b));
                         __m256 max256 = _mm256_set1_ps(-FLT_MAX);
@@ -1921,16 +1917,15 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
                         _mm256_storeu_ps(&dst[out_index], max256);
 
                     }
-                }
-                else if (size == 2 && stride == 2 && is_avx() == 1) {
+                } else if (size == 2 && stride == 2 && is_avx() == 1) {
                     for (j = 0; j < out_w - 4; j += 4) {
-                        int out_index = j + out_w*(i + out_h*(k + c*b));
-                        //float max = -FLT_MAX;
-                        //int max_i = -1;
+                        int out_index = j + out_w * (i + out_h * (k + c * b));
+                        // float max = -FLT_MAX;
+                        // int max_i = -1;
                         __m128 max128 = _mm_set1_ps(-FLT_MAX);
 
                         for (n = 0; n < size; ++n) {
-                            //for (m = 0; m < size; ++m)
+                            // for (m = 0; m < size; ++m)
                             m = 0;
                             {
                                 int cur_h = h_offset + i*stride + n;
@@ -1979,27 +1974,30 @@ void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, i
     }
 }
 
-#else   // AVX
+
+#else  // AVX
+
 
 int is_avx() {
     return 0;
 }
 
+
 int is_fma_avx2() {
     return 0;
 }
 
+
 void gemm_nn(int M, int N, int K, float ALPHA,
-    float *A, int lda,
-    float *B, int ldb,
-    float *C, int ldc)
+             float * A, int lda,
+             float * B, int ldb,
+             float * C, int ldc)
 {
-    int i, j, k;
-    for (i = 0; i < M; ++i) {
-        for (k = 0; k < K; ++k) {
+    for (int i = 0; i < M; ++i) {
+        for (int k = 0; k < K; ++k) {
             PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
-            for (j = 0; j < N; ++j) {
-                C[i*ldc + j] += A_PART*B[k*ldb + j];
+            for (int j = 0; j < N; ++j) {
+                C[i * ldc + j] += A_PART * B[k * ldb + j];
             }
         }
     }

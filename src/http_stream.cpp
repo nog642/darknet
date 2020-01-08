@@ -243,19 +243,17 @@ public:
                     "Content-Type: application/json\r\n"
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
                     "\r\n", 0);
-                _write(client, "[\n", 0);   // open JSON array
-                int n = _write(client, outputbuf, outlen);
+                _write(client, "[\n", 0);  // open JSON array
+                _write(client, outputbuf, outlen);
                 cerr << "JSON_sender: new client " << client << endl;
-            }
-            else // existing client, just stream pix
-            {
-                //char head[400];
+            } else {  // existing client, just stream pix
+                // char head[400];
                 // application/x-resource+json or application/x-collection+json -  when you are representing REST resources and collections
                 // application/json or text/json or text/javascript or text/plain.
                 // https://stackoverflow.com/questions/477816/what-is-the-correct-json-content-type
-                //sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
-                //sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
-                //_write(s, head, 0);
+                // sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
+                // sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
+                // _write(s, head, 0);
                 if (!close_all_sockets) _write(s, ", \n", 0);
                 int n = _write(s, outputbuf, outlen);
                 if (n < outlen)
@@ -342,9 +340,11 @@ class MJPG_sender
     int quality; // jpeg compression [1..100]
     int close_all_sockets;
 
-    int _write(int sock, char const*const s, int len)
+    int _write(int sock, char const * const s, int len)
     {
-        if (len < 1) { len = strlen(s); }
+        if (len < 1) {
+            len = strlen(s);
+        }
         return ::send(sock, s, len, 0);
     }
 
@@ -504,7 +504,7 @@ public:
                 sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
-                //cerr << "known client " << s << " " << n << endl;
+                // cerr << "known client " << s << " " << n << endl;
                 if (n < outlen)
                 {
                     cerr << "MJPG_sender: kill client " << s << endl;
@@ -554,8 +554,12 @@ std::string get_system_frame_time_string()
 
 
 #ifdef __CYGWIN__
-int send_http_post_request(char *http_post_host, int server_port, char *videosource,
-    detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
+int send_http_post_request(char * const http_post_host, int const server_port,
+                           char const * const videosource,
+                           detection * const dets, int const nboxes,
+                           int const classes, char * * const names,
+                           long long int const frame_id, int const ext_output,
+                           int const timeout)
 {
     std::cerr << " send_http_post_request() isn't implemented \n";
     return 0;
@@ -576,8 +580,10 @@ int send_http_post_request(char *http_post_host, int server_port, char *videosou
 // https://webhook.site/
 // https://github.com/yhirose/cpp-httplib
 // sent POST http request
-int send_http_post_request(char *http_post_host, int server_port, char *videosource,
-    detection *dets, int nboxes, int classes, char **names, long long int frame_id, int ext_output, int timeout)
+int send_http_post_request(char const * const http_post_host, int server_port,
+                           char const * const videosource, detection * dets,
+                           int nboxes, int classes, char * * names,
+                           long long int frame_id, int ext_output, int timeout)
 {
     const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
 

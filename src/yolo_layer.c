@@ -282,19 +282,21 @@ void forward_yolo_layer(const layer l, network_state state)
 #ifndef GPU
     for (b = 0; b < l.batch; ++b) {
         for (n = 0; n < l.n; ++n) {
-            int index = entry_index(l, b, n*l.w*l.h, 0);
-            activate_array(l.output + index, 2 * l.w*l.h, LOGISTIC);        // x,y,
-            scal_add_cpu(2 * l.w*l.h, l.scale_x_y, -0.5*(l.scale_x_y - 1), l.output + index, 1);    // scale x,y
-            index = entry_index(l, b, n*l.w*l.h, 4);
-            activate_array(l.output + index, (1 + l.classes)*l.w*l.h, LOGISTIC);
+            int index = entry_index(l, b, n * l.w * l.h, 0);
+            activate_array(l.output + index, 2 * l.w * l.h, LOGISTIC);  // x,y,
+            scal_add_cpu(2 * l.w * l.h, l.scale_x_y, -0.5 * (l.scale_x_y - 1), l.output + index, 1);    // scale x,y
+            index = entry_index(l, b, n * l.w * l.h, 4);
+            activate_array(l.output + index, (1 + l.classes) * l.w * l.h, LOGISTIC);
         }
     }
 #endif
 
     // delta is zeroed
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
-    if (!state.train) return;
-    //float avg_iou = 0;
+    if (!state.train) {
+        return;
+    }
+    // float avg_iou = 0;
     float tot_iou = 0;
     float tot_giou = 0;
     float tot_diou = 0;
@@ -315,15 +317,15 @@ void forward_yolo_layer(const layer l, network_state state)
         for (j = 0; j < l.h; ++j) {
             for (i = 0; i < l.w; ++i) {
                 for (n = 0; n < l.n; ++n) {
-                    int box_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 0);
-                    box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w*l.h);
+                    int box_index = entry_index(l, b, n * l.w * l.h + j * l.w + i, 0);
+                    box pred = get_yolo_box(l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, state.net.w, state.net.h, l.w * l.h);
                     float best_match_iou = 0;
-                    int best_match_t = 0;
+                    // int best_match_t = 0;
                     float best_iou = 0;
                     int best_t = 0;
                     for (t = 0; t < l.max_boxes; ++t) {
-                        box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
-                        int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+                        box truth = float_to_box_stride(state.truth + t * (4 + 1) + b * l.truths, 1);
+                        int class_id = state.truth[t * (4 + 1) + b * l.truths + 4];
                         if (class_id >= l.classes) {
                             printf(" Warning: in txt-labels class_id=%d >= classes=%d in cfg-file. In txt-labels class_id should be [from 0 to %d] \n", class_id, l.classes, l.classes - 1);
                             printf(" truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f, class_id = %d \n", truth.x, truth.y, truth.w, truth.h, class_id);
@@ -340,7 +342,7 @@ void forward_yolo_layer(const layer l, network_state state)
                         float iou = box_iou(pred, truth);
                         if (iou > best_match_iou && class_id_match == 1) {
                             best_match_iou = iou;
-                            best_match_t = t;
+                            // best_match_t = t;
                         }
                         if (iou > best_iou) {
                             best_iou = iou;
@@ -372,13 +374,15 @@ void forward_yolo_layer(const layer l, network_state state)
                 char buff[256];
                 printf(" Wrong label: truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f \n", truth.x, truth.y, truth.w, truth.h);
                 sprintf(buff, "echo \"Wrong label: truth.x = %f, truth.y = %f, truth.w = %f, truth.h = %f\" >> bad_label.list",
-                    truth.x, truth.y, truth.w, truth.h);
+                        truth.x, truth.y, truth.w, truth.h);
                 system(buff);
             }
-            int class_id = state.truth[t*(4 + 1) + b*l.truths + 4];
+            int class_id = state.truth[t * (4 + 1) + b * l.truths + 4];
             if (class_id >= l.classes) continue; // if label contains class_id more than number of classes in the cfg-file
 
-            if (!truth.x) break;  // continue;
+            if (!truth.x) {
+                break;  // continue;
+            }
             float best_iou = 0;
             int best_n = 0;
             i = (truth.x * l.w);

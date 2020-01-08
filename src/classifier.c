@@ -867,11 +867,10 @@ void predict_classifier(char* datacfg, char* cfgfile, char* weightfile, char* fi
     }
 
     int i = 0;
-    char** names = get_labels(name_list);
-    clock_t time;
-    int* indexes = (int*)calloc(top, sizeof(int));
+    char * * names = get_labels(name_list);
+    int * indexes = calloc(top, sizeof(int));
     char buff[256];
-    char* input = buff;
+    char * input = buff;
     // int size = net.w;
     while (1) {
         if (filename) {
@@ -928,7 +927,7 @@ void predict_classifier(char* datacfg, char* cfgfile, char* weightfile, char* fi
 }
 
 
-void label_classifier(char* datacfg, char* filename, char* weightfile)
+void label_classifier(char * datacfg, char * filename, char * weightfile)
 {
     int i;
     network net = parse_network_cfg(filename);
@@ -938,16 +937,16 @@ void label_classifier(char* datacfg, char* filename, char* weightfile)
     }
     srand(time(0));
 
-    list* options = read_data_cfg(datacfg);
+    list * options = read_data_cfg(datacfg);
 
-    char* label_list = option_find_str(options, "names", "data/labels.list");
-    char* test_list = option_find_str(options, "test", "data/train.list");
+    char * label_list = option_find_str(options, "names", "data/labels.list");
+    char * test_list = option_find_str(options, "test", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
 
-    char** labels = get_labels(label_list);
-    list* plist = get_paths(test_list);
+    char * * labels = get_labels(label_list);
+    list * plist = get_paths(test_list);
 
-    char** paths = (char**)list_to_array(plist);
+    char * * paths = (char * *)list_to_array(plist);
     int m = plist->size;
     free_list(plist);
 
@@ -955,7 +954,7 @@ void label_classifier(char* datacfg, char* filename, char* weightfile)
         image im = load_image_color(paths[i], 0, 0);
         image resized = resize_min(im, net.w);
         image crop = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
-        float* pred = network_predict(net, crop.data);
+        float * pred = network_predict(net, crop.data);
 
         if (resized.data != im.data) {
             free_image(resized);
@@ -1092,7 +1091,9 @@ void threat_classifier(char* datacfg, char* cfgfile, char* weightfile, int cam_i
 
     while (1) {
         ++count;
-        struct timeval tval_before, tval_after, tval_result;
+        struct timeval tval_before;
+        struct timeval tval_after;
+        struct timeval tval_result;
         gettimeofday(&tval_before, NULL);
 
         //image in = get_image_from_stream(cap);

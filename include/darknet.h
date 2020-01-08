@@ -990,6 +990,7 @@ LIB_API void * cuda_get_context();
 // utils.h
 LIB_API void free_ptrs(void * * ptrs, int n);
 LIB_API void top_k(float * a, int n, int k, int * index);
+LIB_API void mean_arrays(float * * a, int n, int els, float * avg);
 
 
 // tree.h

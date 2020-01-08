@@ -12,61 +12,71 @@
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-list *get_paths(char *filename)
+
+list * get_paths(char * filename)
 {
-    char *path;
-    FILE *file = fopen(filename, "r");
-    if(!file) file_error(filename);
-    list *lines = make_list();
-    while((path=fgetl(file))){
+    char * path;
+    FILE * file = fopen(filename, "r");
+    if (!file) {
+        file_error(filename);
+    }
+    list * lines = make_list();
+    while ((path = fgetl(file))) {
         list_insert(lines, path);
     }
     fclose(file);
     return lines;
 }
 
-/*
-char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
-{
-    char **random_paths = calloc(n, sizeof(char*));
-    int i;
-    pthread_mutex_lock(&mutex);
-    for(i = 0; i < n; ++i){
-        int index = random_gen()%m;
-        indexes[i] = index;
-        random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
-    }
-    pthread_mutex_unlock(&mutex);
-    return random_paths;
-}
-*/
 
-char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augment_speed)
+// char * * get_random_paths_indexes(char * * const paths, int const n,
+//                                   int const m, int * const indexes)
+// {
+//     char * * const random_paths = calloc(n, sizeof(char *));
+//     pthread_mutex_lock(&mutex);
+//     for (int i = 0; i < n; ++i) {
+//         int index = random_gen() % m;
+//         indexes[i] = index;
+//         random_paths[i] = paths[index];
+//         if(i == 0) {
+//             printf("%s\n", paths[index]);
+//         }
+//     }
+//     pthread_mutex_unlock(&mutex);
+//     return random_paths;
+// }
+
+
+char * * get_sequential_paths(char * * paths, int n, int m, int mini_batch, int augment_speed)
 {
     int speed = rand_int(1, augment_speed);
-    if (speed < 1) speed = 1;
-    char** sequentia_paths = (char**)calloc(n, sizeof(char*));
-    int i;
+    if (speed < 1) {
+        speed = 1;
+    }
+    char * * sequentia_paths = calloc(n, sizeof(char *));
     pthread_mutex_lock(&mutex);
-    //printf("n = %d, mini_batch = %d \n", n, mini_batch);
-    unsigned int *start_time_indexes = (unsigned int *)calloc(mini_batch, sizeof(unsigned int));
-    for (i = 0; i < mini_batch; ++i) {
+    // printf("n = %d, mini_batch = %d \n", n, mini_batch);
+    unsigned int * start_time_indexes = calloc(mini_batch, sizeof(unsigned int));
+    for (int i = 0; i < mini_batch; ++i) {
         start_time_indexes[i] = random_gen() % m;
-        //printf(" start_time_indexes[i] = %u, ", start_time_indexes[i]);
+        // printf(" start_time_indexes[i] = %u, ", start_time_indexes[i]);
     }
 
-    for (i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         do {
             int time_line_index = i % mini_batch;
             unsigned int index = start_time_indexes[time_line_index] % m;
             start_time_indexes[time_line_index] += speed;
 
-            //int index = random_gen() % m;
+            // int index = random_gen() % m;
             sequentia_paths[i] = paths[index];
-            //if(i == 0) printf("%s\n", paths[index]);
-            //printf(" index = %u - grp: %s \n", index, paths[index]);
-            if (strlen(sequentia_paths[i]) <= 4) printf(" Very small path to the image: %s \n", sequentia_paths[i]);
+            // if (i == 0) {
+            //     printf("%s\n", paths[index]);
+            // }
+            // printf(" index = %u - grp: %s \n", index, paths[index]);
+            if (strlen(sequentia_paths[i]) <= 4) {
+                printf(" Very small path to the image: %s \n", sequentia_paths[i]);
+            }
         } while (strlen(sequentia_paths[i]) == 0);
     }
     free(start_time_indexes);
@@ -74,18 +84,19 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
     return sequentia_paths;
 }
 
-char **get_random_paths(char **paths, int n, int m)
+
+char * * get_random_paths(char * * paths, int n, int m)
 {
-    char** random_paths = (char**)calloc(n, sizeof(char*));
+    char * * random_paths = calloc(n, sizeof(char *));
     int i;
     pthread_mutex_lock(&mutex);
-    //printf("n = %d \n", n);
-    for(i = 0; i < n; ++i){
+    // printf("n = %d \n", n);
+    for (i = 0; i < n; ++i) {
         do {
             int index = random_gen() % m;
             random_paths[i] = paths[index];
-            //if(i == 0) printf("%s\n", paths[index]);
-            //printf("grp: %s\n", paths[index]);
+            // if(i == 0) printf("%s\n", paths[index]);
+            // printf("grp: %s\n", paths[index]);
             if (strlen(random_paths[i]) <= 4) printf(" Very small path to the image: %s \n", random_paths[i]);
         } while (strlen(random_paths[i]) == 0);
     }
@@ -93,11 +104,11 @@ char **get_random_paths(char **paths, int n, int m)
     return random_paths;
 }
 
-char **find_replace_paths(char **paths, int n, char *find, char *replace)
+char * * find_replace_paths(char * * paths, int n, char * find, char * replace)
 {
-    char** replace_paths = (char**)calloc(n, sizeof(char*));
+    char * * replace_paths = calloc(n, sizeof(char *));
     int i;
-    for(i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
         char replaced[4096];
         find_replace(paths[i], find, replace, replaced);
         replace_paths[i] = copy_string(replaced);
@@ -105,15 +116,15 @@ char **find_replace_paths(char **paths, int n, char *find, char *replace)
     return replace_paths;
 }
 
-matrix load_image_paths_gray(char **paths, int n, int w, int h)
+
+matrix load_image_paths_gray(char * * paths, int n, int w, int h)
 {
-    int i;
     matrix X;
     X.rows = n;
-    X.vals = (float**)calloc(X.rows, sizeof(float*));
+    X.vals = (float * *)calloc(X.rows, sizeof(float *));
     X.cols = 0;
 
-    for(i = 0; i < n; ++i){
+    for (int i = 0; i < n; ++i) {
         image im = load_image(paths[i], w, h, 3);
 
         image gray = grayscale_image(im);
@@ -121,12 +132,13 @@ matrix load_image_paths_gray(char **paths, int n, int w, int h)
         im = gray;
 
         X.vals[i] = im.data;
-        X.cols = im.h*im.w*im.c;
+        X.cols = im.h * im.w * im.c;
     }
     return X;
 }
 
-matrix load_image_paths(char **paths, int n, int w, int h)
+
+matrix load_image_paths(char * * paths, int n, int w, int h)
 {
     int i;
     matrix X;
@@ -1082,52 +1094,49 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 else if (i_mixup == 1) {
                     image old_img = make_empty_image(w, h, c);
                     old_img.data = d.X.vals[i];
-                    //show_image(ai, "new");
-                    //show_image(old_img, "old");
-                    //wait_until_press_key_cv();
+                    // show_image(ai, "new");
+                    // show_image(old_img, "old");
+                    // wait_until_press_key_cv();
                     blend_images_cv(ai, 0.5, old_img, 0.5);
                     blend_truth(d.y.vals[i], boxes, truth);
                     free_image(old_img);
                     d.X.vals[i] = ai.data;
                 }
-            }
-            else if (use_mixup == 3) {
+            } else if (use_mixup == 3) {
                 if (i_mixup == 0) {
-                    image tmp_img = make_image(w, h, c);
+                    image const tmp_img = make_image(w, h, c);
                     d.X.vals[i] = tmp_img.data;
                 }
 
                 if (flip) {
-                    int tmp = pleft;
+                    int const tmp = pleft;
                     pleft = pright;
                     pright = tmp;
                 }
 
-                const int left_shift = min_val_cmp(cut_x[i], max_val_cmp(0, (-pleft*w / ow)));
-                const int top_shift = min_val_cmp(cut_y[i], max_val_cmp(0, (-ptop*h / oh)));
+                int const left_shift = min_val_cmp(cut_x[i], max_val_cmp(0, (-pleft * w / ow)));
+                int const top_shift = min_val_cmp(cut_y[i], max_val_cmp(0, (-ptop * h / oh)));
 
-                const int right_shift = min_val_cmp((w - cut_x[i]), max_val_cmp(0, (-pright*w / ow)));
-                const int bot_shift = min_val_cmp(h - cut_y[i], max_val_cmp(0, (-pbot*h / oh)));
+                int const right_shift = min_val_cmp((w - cut_x[i]), max_val_cmp(0, (-pright * w / ow)));
+                int const bot_shift = min_val_cmp(h - cut_y[i], max_val_cmp(0, (-pbot * h / oh)));
 
-
-                int k, x, y;
-                for (k = 0; k < c; ++k) {
-                    for (y = 0; y < h; ++y) {
-                        int j = y*w + k*w*h;
+                for (int k = 0; k < c; ++k) {
+                    for (int y = 0; y < h; ++y) {
+                        int const j = y * w + k * w * h;
                         if (i_mixup == 0 && y < cut_y[i]) {
-                            int j_src = (w - cut_x[i] - right_shift) + (y + h - cut_y[i] - bot_shift)*w + k*w*h;
+                            int const j_src = (w - cut_x[i] - right_shift) + (y + h - cut_y[i] - bot_shift) * w + k * w * h;
                             memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 1 && y < cut_y[i]) {
-                            int j_src = left_shift + (y + h - cut_y[i] - bot_shift)*w + k*w*h;
+                            int const j_src = left_shift + (y + h - cut_y[i] - bot_shift) * w + k * w * h;
                             memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w-cut_x[i]) * sizeof(float));
                         }
                         if (i_mixup == 2 && y >= cut_y[i]) {
-                            int j_src = (w - cut_x[i] - right_shift) + (top_shift + y - cut_y[i])*w + k*w*h;
+                            int const j_src = (w - cut_x[i] - right_shift) + (top_shift + y - cut_y[i]) * w + k * w * h;
                             memcpy(&d.X.vals[i][j + 0], &ai.data[j_src], cut_x[i] * sizeof(float));
                         }
                         if (i_mixup == 3 && y >= cut_y[i]) {
-                            int j_src = left_shift + (top_shift + y - cut_y[i])*w + k*w*h;
+                            int const j_src = left_shift + (top_shift + y - cut_y[i]) * w + k * w * h;
                             memcpy(&d.X.vals[i][j + cut_x[i]], &ai.data[j_src], (w - cut_x[i]) * sizeof(float));
                         }
                     }
@@ -1140,8 +1149,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             }
 
 
-            if (show_imgs && i_mixup == use_mixup)   // delete i_mixup
-            {
+            if (show_imgs && i_mixup == use_mixup) {  // delete i_mixup
                 image tmp_ai = copy_image(ai);
                 char buff[1000];
                 //sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
@@ -1159,9 +1167,9 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 save_image(tmp_ai, buff);
                 if (show_imgs == 1) {
-                    //char buff_src[1000];
-                    //sprintf(buff_src, "src_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
-                    //show_image_mat(src, buff_src);
+                    // char buff_src[1000];
+                    // sprintf(buff_src, "src_%d_%d_%s_%d", random_index, i, basecfg((char *)filename), random_gen());
+                    // show_image_mat(src, buff_src);
                     show_image(tmp_ai, buff);
                     wait_until_press_key_cv();
                 }
@@ -1172,29 +1180,40 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             release_mat(&src);
             free(truth);
         }
-        if (random_paths) free(random_paths);
+        if (random_paths) {
+            free(random_paths);
+        }
     }
 
 
     return d;
 }
-#else    // OPENCV
+
+
+#else  // OPENCV
+
+
 void blend_images(image new_img, float alpha, image old_img, float beta)
 {
-    int i;
     int data_size = new_img.w * new_img.h * new_img.c;
     #pragma omp parallel for
-    for (i = 0; i < data_size; ++i)
+    for (int i = 0; i < data_size; ++i) {
         new_img.data[i] = new_img.data[i] * alpha + old_img.data[i] * beta;
+    }
 }
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
-    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+
+data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
+                         int boxes, int classes, int use_flip, int use_blur,
+                         int use_mixup, float jitter, float hue,
+                         float saturation, float exposure, int mini_batch,
+                         int track, int augment_speed, int letter_box,
+                         int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
-    char **random_paths;
-    char **mixup_random_paths = NULL;
+    char * * random_paths;
+    char * * mixup_random_paths = NULL;
     if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
     else random_paths = get_random_paths(paths, n, m);
 
@@ -1221,21 +1240,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.y = make_matrix(n, 5 * boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= mixup; i_mixup++) {
-        if (i_mixup) augmentation_calculated = 0;
+        if (i_mixup) {
+            augmentation_calculated = 0;
+        }
         for (i = 0; i < n; ++i) {
-            float *truth = (float*)calloc(5 * boxes, sizeof(float));
-            char *filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];
+            float * truth = calloc(5 * boxes, sizeof(float));
+            char * filename = (i_mixup) ? mixup_random_paths[i] : random_paths[i];
 
             image orig = load_image(filename, 0, 0, c);
 
             int oh = orig.h;
             int ow = orig.w;
 
-            int dw = (ow*jitter);
-            int dh = (oh*jitter);
+            int dw = (ow * jitter);
+            int dh = (oh * jitter);
 
-            if (!augmentation_calculated || !track)
-            {
+            if (!augmentation_calculated || !track) {
                 augmentation_calculated = 1;
                 r1 = random_float();
                 r2 = random_float();
@@ -1256,29 +1276,25 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
 
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+            float scale = rand_precalc_random(.25, 2, r_scale);  // unused currently
 
-            if (letter_box)
-            {
+            if (letter_box) {
                 float img_ar = (float)ow / (float)oh;
                 float net_ar = (float)w / (float)h;
                 float result_ar = img_ar / net_ar;
-                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
-                if (result_ar > 1)  // sheight - should be increased
-                {
+                // printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
+                if (result_ar > 1) {  // sheight - should be increased
                     float oh_tmp = ow / net_ar;
                     float delta_h = (oh_tmp - oh) / 2;
                     ptop = ptop - delta_h;
+                    // printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
                     pbot = pbot - delta_h;
-                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
-                }
-                else  // swidth - should be increased
-                {
+                } else {  // swidth - should be increased
                     float ow_tmp = oh * net_ar;
                     float delta_w = (ow_tmp - ow) / 2;
                     pleft = pleft - delta_w;
                     pright = pright - delta_w;
-                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
+                    // printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
                 }
             }
 
@@ -1294,18 +1310,20 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             float dy = ((float)ptop / oh) / sy;
 
             image sized = resize_image(cropped, w, h);
-            if (flip) flip_image(sized);
+            if (flip) {
+                flip_image(sized);
+            }
             distort_image(sized, dhue, dsat, dexp);
-            //random_distort_image(sized, hue, saturation, exposure);
+            // random_distort_image(sized, hue, saturation, exposure);
 
             fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
             if (i_mixup) {
                 image old_img = sized;
                 old_img.data = d.X.vals[i];
-                //show_image(sized, "new");
-                //show_image(old_img, "old");
-                //wait_until_press_key_cv();
+                // show_image(sized, "new");
+                // show_image(old_img, "old");
+                // wait_until_press_key_cv();
                 blend_images(sized, 0.5, old_img, 0.5);
                 blend_truth(truth, boxes, d.y.vals[i]);
                 free_image(old_img);
@@ -1314,20 +1332,20 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             d.X.vals[i] = sized.data;
             memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
 
-            if (show_imgs)// && i_mixup)
-            {
+            if (show_imgs) {
                 char buff[1000];
                 sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg(filename), random_gen());
 
-                int t;
-                for (t = 0; t < boxes; ++t) {
-                    box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
-                    if (!b.x) break;
+                for (int t = 0; t < boxes; ++t) {
+                    box b = float_to_box_stride(d.y.vals[i] + t * (4 + 1), 1);
+                    if (!b.x) {
+                        break;
+                    }
                     int left = (b.x - b.w / 2.)*sized.w;
                     int right = (b.x + b.w / 2.)*sized.w;
                     int top = (b.y - b.h / 2.)*sized.h;
                     int bot = (b.y + b.h / 2.)*sized.h;
-                    draw_box_width(sized, left, top, right, bot, 1, 150, 100, 50); // 3 channels RGB
+                    draw_box_width(sized, left, top, right, bot, 1, 150, 100, 50);  // 3 channels RGB
                 }
 
                 save_image(sized, buff);
@@ -1336,7 +1354,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     wait_until_press_key_cv();
                 }
                 printf("\nYou use flag -show_imgs, so will be saved aug_...jpg images. Press Enter: \n");
-                //getchar();
+                // getchar();
             }
 
             free_image(orig);
@@ -1345,88 +1363,110 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         }
     }
     free(random_paths);
-    if (mixup_random_paths) free(mixup_random_paths);
+    if (mixup_random_paths) {
+        free(mixup_random_paths);
+    }
     return d;
 }
+
+
 #endif    // OPENCV
 
-void *load_thread(void *ptr)
-{
-    //srand(time(0));
-    //printf("Loading data: %d\n", random_gen());
-    load_args a = *(struct load_args*)ptr;
-    if(a.exposure == 0) a.exposure = 1;
-    if(a.saturation == 0) a.saturation = 1;
-    if(a.aspect == 0) a.aspect = 1;
 
-    if (a.type == OLD_CLASSIFICATION_DATA){
+void * load_thread(void * ptr)
+{
+    // srand(time(0));
+    // printf("Loading data: %d\n", random_gen());
+    load_args a = *(struct load_args *)ptr;
+    if (a.exposure == 0) {
+        a.exposure = 1;
+    }
+    if (a.saturation == 0) {
+        a.saturation = 1;
+    }
+    if (a.aspect == 0) {
+        a.aspect = 1;
+    }
+
+    if (a.type == OLD_CLASSIFICATION_DATA) {
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
-    } else if (a.type == CLASSIFICATION_DATA){
+    } else if (a.type == CLASSIFICATION_DATA) {
         *a.d = load_data_augment(a.paths, a.n, a.m, a.labels, a.classes, a.hierarchy, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure, a.mixup, a.blur, a.show_imgs, a.label_smooth_eps);
-    } else if (a.type == SUPER_DATA){
+    } else if (a.type == SUPER_DATA) {
         *a.d = load_data_super(a.paths, a.n, a.m, a.w, a.h, a.scale);
-    } else if (a.type == WRITING_DATA){
+    } else if (a.type == WRITING_DATA) {
         *a.d = load_data_writing(a.paths, a.n, a.m, a.w, a.h, a.out_w, a.out_h);
-    } else if (a.type == REGION_DATA){
+    } else if (a.type == REGION_DATA) {
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
-    } else if (a.type == DETECTION_DATA){
-        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.blur, a.mixup, a.jitter,
-            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.show_imgs);
-    } else if (a.type == SWAG_DATA){
+    } else if (a.type == DETECTION_DATA) {
+        *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c,
+                                   a.num_boxes, a.classes, a.flip, a.blur,
+                                   a.mixup, a.jitter, a.hue, a.saturation,
+                                   a.exposure, a.mini_batch, a.track,
+                                   a.augment_speed, a.letter_box, a.show_imgs);
+    } else if (a.type == SWAG_DATA) {
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
-    } else if (a.type == COMPARE_DATA){
+    } else if (a.type == COMPARE_DATA) {
         *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
-    } else if (a.type == IMAGE_DATA){
+    } else if (a.type == IMAGE_DATA) {
         *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
-    }else if (a.type == LETTERBOX_DATA) {
+    } else if (a.type == LETTERBOX_DATA) {
         *(a.im) = load_image(a.path, 0, 0, a.c);
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
-    } else if (a.type == TAG_DATA){
-        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max, a.w, a.h, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+    } else if (a.type == TAG_DATA) {
+        *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.flip, a.min, a.max,
+                             a.w, a.h, a.angle, a.aspect, a.hue, a.saturation,
+                             a.exposure);
     }
     free(ptr);
-    return 0;
+    return NULL;
 }
+
 
 pthread_t load_data_in_thread(load_args args)
 {
     pthread_t thread;
-    struct load_args* ptr = (load_args*)calloc(1, sizeof(struct load_args));
+    struct load_args * ptr = (load_args *)calloc(1, sizeof(struct load_args));
     *ptr = args;
-    if(pthread_create(&thread, 0, load_thread, ptr)) error("Thread creation failed");
+    if (pthread_create(&thread, 0, load_thread, ptr)) {
+        error("Thread creation failed");
+    }
     return thread;
 }
 
-void *load_threads(void *ptr)
+
+void * load_threads(void * ptr)
 {
-    //srand(time(0));
-    int i;
+    // srand(time(0));
     load_args args = *(load_args *)ptr;
-    if (args.threads == 0) args.threads = 1;
-    data *out = args.d;
+    if (args.threads == 0) {
+        args.threads = 1;
+    }
+    data * out = args.d;
     int total = args.n;
     free(ptr);
-    data* buffers = (data*)calloc(args.threads, sizeof(data));
-    pthread_t* threads = (pthread_t*)calloc(args.threads, sizeof(pthread_t));
-    for(i = 0; i < args.threads; ++i){
+    data * buffers = calloc(args.threads, sizeof(data));
+    pthread_t * threads = calloc(args.threads, sizeof(pthread_t));
+    for (int i = 0; i < args.threads; ++i) {
         args.d = buffers + i;
-        args.n = (i+1) * total/args.threads - i * total/args.threads;
+        args.n = (i + 1) * total/args.threads - i * total / args.threads;
         threads[i] = load_data_in_thread(args);
     }
-    for(i = 0; i < args.threads; ++i){
+    for (int i = 0; i < args.threads; ++i) {
         pthread_join(threads[i], 0);
     }
     *out = concat_datas(buffers, args.threads);
     out->shallow = 0;
-    for(i = 0; i < args.threads; ++i){
+    for (int i = 0; i < args.threads; ++i) {
         buffers[i].shallow = 1;
         free_data(buffers[i]);
     }
     free(buffers);
     free(threads);
-    return 0;
+    return NULL;
 }
+
 
 pthread_t load_data(load_args args)
 {

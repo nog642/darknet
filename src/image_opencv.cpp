@@ -371,7 +371,7 @@ extern "C" void create_window_cv(char const* window_name, int full_screen, int w
         cerr << "OpenCV exception: create_window_cv \n";
     }
 }
-// ----------------------------------------
+
 
 extern "C" void destroy_all_windows_cv()
 {
@@ -382,7 +382,7 @@ extern "C" void destroy_all_windows_cv()
         cerr << "OpenCV exception: destroy_all_windows_cv \n";
     }
 }
-// ----------------------------------------
+
 
 extern "C" int wait_key_cv(int delay)
 {
@@ -394,13 +394,13 @@ extern "C" int wait_key_cv(int delay)
     }
     return -1;
 }
-// ----------------------------------------
+
 
 extern "C" int wait_until_press_key_cv()
 {
     return wait_key_cv(0);
 }
-// ----------------------------------------
+
 
 extern "C" void make_window(char *name, int w, int h, int fullscreen)
 {
@@ -422,14 +422,14 @@ extern "C" void make_window(char *name, int w, int h, int fullscreen)
         cerr << "OpenCV exception: make_window \n";
     }
 }
-// ----------------------------------------
 
-static float get_pixel(image m, int x, int y, int c)
-{
-    assert(x < m.w && y < m.h && c < m.c);
-    return m.data[c*m.h*m.w + y*m.w + x];
-}
-// ----------------------------------------
+
+// static float get_pixel(image m, int x, int y, int c)
+// {
+//     assert(x < m.w && y < m.h && c < m.c);
+//     return m.data[c*m.h*m.w + y*m.w + x];
+// }
+
 
 extern "C" void show_image_cv(image p, const char *name)
 {
@@ -448,19 +448,17 @@ extern "C" void show_image_cv(image p, const char *name)
         cerr << "OpenCV exception: show_image_cv \n";
     }
 }
-// ----------------------------------------
 
-/*
-extern "C" void show_image_cv_ipl(mat_cv *disp, const char *name)
-{
-    if (disp == NULL) return;
-    char buff[256];
-    sprintf(buff, "%s", name);
-    cv::namedWindow(buff, WINDOW_NORMAL);
-    cvShowImage(buff, disp);
-}
-// ----------------------------------------
-*/
+
+// extern "C" void show_image_cv_ipl(mat_cv *disp, const char *name)
+// {
+//     if (disp == NULL) return;
+//     char buff[256];
+//     sprintf(buff, "%s", name);
+//     cv::namedWindow(buff, WINDOW_NORMAL);
+//     cvShowImage(buff, disp);
+// }
+
 
 extern "C" void show_image_mat(mat_cv *mat_ptr, const char *name)
 {
@@ -474,6 +472,7 @@ extern "C" void show_image_mat(mat_cv *mat_ptr, const char *name)
         cerr << "OpenCV exception: show_image_mat \n";
     }
 }
+
 
 // ====================================================================
 // Video Writer
@@ -862,19 +861,20 @@ extern "C" void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 // Draw Detection
 // ====================================================================
-extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
+extern "C" void draw_detections_cv_v3(mat_cv * mat, detection * dets, int num, float thresh, char * * names, image const * const * alphabet, int classes, int ext_output)
 {
     try {
-        cv::Mat *show_img = (cv::Mat*)mat;
-        int i, j;
-        if (!show_img) return;
+        cv::Mat *show_img = (cv::Mat *)mat;
+        if (!show_img) {
+            return;
+        }
         static int frame_id = 0;
         frame_id++;
 
-        for (i = 0; i < num; ++i) {
-            char labelstr[4096] = { 0 };
+        for (int i = 0; i < num; ++i) {
+            char labelstr[4096] = {0};
             int class_id = -1;
-            for (j = 0; j < classes; ++j) {
+            for (int j = 0; j < classes; ++j) {
                 int show = strncmp(names[j], "dont_show", 9);
                 if (dets[i].prob[j] > thresh && show) {
                     if (class_id < 0) {
@@ -883,8 +883,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                         char buff[10];
                         sprintf(buff, " (%2.0f%%)", dets[i].prob[j] * 100);
                         strcat(labelstr, buff);
-                    }
-                    else {
+                    } else {
                         strcat(labelstr, ", ");
                         strcat(labelstr, names[j]);
                     }
@@ -894,23 +893,23 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
             if (class_id >= 0) {
                 int width = std::max(1.0f, show_img->rows * .002f);
 
-                //if(0){
-                //width = pow(prob, 1./2.)*10+1;
-                //alphabet = 0;
-                //}
+                // if (0) {
+                // width = pow(prob, 1. / 2.) * 10 + 1;
+                // alphabet = 0;
+                // }
 
-                //printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
+                // printf("%d %s: %.0f%%\n", i, names[class_id], prob * 100);
                 int offset = class_id * 123457 % classes;
                 float red = get_color(2, offset, classes);
                 float green = get_color(1, offset, classes);
                 float blue = get_color(0, offset, classes);
-                float rgb[3];
+                // float rgb[3];
 
-                //width = prob*20+2;
+                // width = prob * 20 + 2;
 
-                rgb[0] = red;
-                rgb[1] = green;
-                rgb[2] = blue;
+                // rgb[0] = red;
+                // rgb[1] = green;
+                // rgb[2] = blue;
                 box b = dets[i].bbox;
                 if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
                 if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
@@ -920,23 +919,31 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 b.h = (b.h < 1) ? b.h : 1;
                 b.x = (b.x < 1) ? b.x : 1;
                 b.y = (b.y < 1) ? b.y : 1;
-                //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+                // printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
                 int left = (b.x - b.w / 2.)*show_img->cols;
                 int right = (b.x + b.w / 2.)*show_img->cols;
                 int top = (b.y - b.h / 2.)*show_img->rows;
                 int bot = (b.y + b.h / 2.)*show_img->rows;
 
-                if (left < 0) left = 0;
-                if (right > show_img->cols - 1) right = show_img->cols - 1;
-                if (top < 0) top = 0;
-                if (bot > show_img->rows - 1) bot = show_img->rows - 1;
+                if (left < 0) {
+                    left = 0;
+                }
+                if (right > show_img->cols - 1) {
+                    right = show_img->cols - 1;
+                }
+                if (top < 0) {
+                    top = 0;
+                }
+                if (bot > show_img->rows - 1) {
+                    bot = show_img->rows - 1;
+                }
 
-                //int b_x_center = (left + right) / 2;
-                //int b_y_center = (top + bot) / 2;
-                //int b_width = right - left;
-                //int b_height = bot - top;
-                //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
+                // int b_x_center = (left + right) / 2;
+                // int b_y_center = (top + bot) / 2;
+                // int b_width = right - left;
+                // int b_height = bot - top;
+                // sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
 
                 float const font_size = show_img->rows / 1000.F;
                 cv::Size const text_size = cv::getTextSize(labelstr, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, 1, 0);
@@ -946,11 +953,13 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 pt2.x = right;
                 pt2.y = bot;
                 pt_text.x = left;
-                pt_text.y = top - 4;// 12;
+                pt_text.y = top - 4;  // 12;
                 pt_text_bg1.x = left;
                 pt_text_bg1.y = top - (3 + 18 * font_size);
                 pt_text_bg2.x = right;
-                if ((right - left) < text_size.width) pt_text_bg2.x = left + text_size.width;
+                if ((right - left) < text_size.width) {
+                    pt_text_bg2.x = left + text_size.width;
+                }
                 pt_text_bg2.y = top;
                 cv::Scalar color;
                 color.val[0] = red * 256;
@@ -997,6 +1006,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
     }
 }
 // ----------------------------------------
+
 
 // ====================================================================
 // Draw Loss & Accuracy chart
@@ -1059,6 +1069,7 @@ extern "C" mat_cv* draw_train_chart(float max_img_loss, int max_batches, int num
     return (mat_cv*)img_ptr;
 }
 // ----------------------------------------
+
 
 extern "C" void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
     float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
@@ -1210,12 +1221,11 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
             if (blur == 1) {
                 //cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
                 cv::bilateralFilter(sized, dst, 17, 75, 75);
-            }
-            else {
-                int ksize = (blur / 2) * 2 + 1;
-                cv::Size kernel_size = cv::Size(ksize, ksize);
-                //cv::GaussianBlur(sized, dst, kernel_size, 0);
-                //cv::medianBlur(sized, dst, ksize);
+            } else {
+                int const ksize = (blur / 2) * 2 + 1;
+                // cv::Size kernel_size = cv::Size(ksize, ksize);
+                // cv::GaussianBlur(sized, dst, kernel_size, 0);
+                // cv::medianBlur(sized, dst, ksize);
                 cv::bilateralFilter(sized, dst, ksize, 75, 75);
 
                 // sharpen

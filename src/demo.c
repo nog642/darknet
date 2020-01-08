@@ -21,7 +21,7 @@
 #include "http_stream.h"
 
 static char * * demo_names;
-static image * * demo_alphabet;
+static image const * const * demo_alphabet;
 static int demo_classes;
 
 static int nboxes = 0;
@@ -54,6 +54,11 @@ static int volatile flag_exit;
 static int letter_box = 0;
 
 
+/**
+ * Sets in_s to the next frame.
+ * @param ptr unused
+ * @return NULL
+ */
 void * fetch_in_thread(void * ptr)
 {
     int dont_close_stream = 0;  // set 1 if your IP-camera periodically turns off and turns on video-stream
@@ -117,12 +122,14 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
           int time_limit_sec, char * http_post_host)
 {
     letter_box = letter_box_in;
-    in_img = det_img = show_img = NULL;
+    in_img = NULL;
+    det_img = NULL;
+    show_img = NULL;
     // skip = frame_skip;
     image * * const alphabet = load_alphabet();
     int delay = frame_skip;
     demo_names = names;
-    demo_alphabet = alphabet;
+    demo_alphabet = (image const * const *)alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
     demo_ext_output = ext_output;
@@ -222,16 +229,19 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
             int local_nboxes = nboxes;
             detection * const local_dets = dets;
 
-            if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) {
+            if (pthread_create(&fetch_thread, NULL, fetch_in_thread, NULL)) {
                 error("Thread creation failed");
             }
-            if (pthread_create(&detect_thread, 0, detect_in_thread, 0)) {
+            if (pthread_create(&detect_thread, NULL, detect_in_thread, NULL)) {
                 error("Thread creation failed");
             }
             if (nms) {
                 // do_nms_obj(local_dets, local_nboxes, l.classes, nms);  // bad results
-                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
-                else diounms_sort(local_dets, local_nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+                if (l.nms_kind == DEFAULT_NMS) {
+                    do_nms_sort(local_dets, local_nboxes, l.classes, nms);
+                } else {
+                    diounms_sort(local_dets, local_nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+                }
             }
 
             // printf("\033[2J");
@@ -245,18 +255,19 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
                 send_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
             }
 
-            //char *http_post_server = "webhook.site/898bbd9b-0ddd-49cf-b81d-1f56be98d870";
+            // char * http_post_server = "webhook.site/898bbd9b-0ddd-49cf-b81d-1f56be98d870";
             if (http_post_host && !send_http_post_once) {
                 int timeout = 3;            // 3 seconds
                 int http_post_port = 80;    // 443 https, 80 http
-                if (send_http_post_request(http_post_host, http_post_port, filename,
-                    local_dets, nboxes, classes, names, frame_id, ext_output, timeout))
-                {
-                    if (time_limit_sec > 0) send_http_post_once = 1;
+                if (send_http_post_request(http_post_host, http_post_port, filename, local_dets, nboxes, classes, names, frame_id, ext_output, timeout)) {
+                    if (time_limit_sec > 0) {
+                        send_http_post_once = 1;
+                    }
                 }
             }
 
-            draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet,
+            draw_detections_cv_v3(show_img, local_dets, local_nboxes,
+                                  demo_thresh, demo_names, demo_alphabet,
                                   demo_classes, demo_ext_output);
             free_detections(local_dets, local_nboxes);
 
@@ -303,10 +314,11 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
 
             release_mat(&show_img);
 
-            pthread_join(fetch_thread, 0);
-            pthread_join(detect_thread, 0);
+            // wait
+            pthread_join(fetch_thread, NULL);
+            pthread_join(detect_thread, NULL);
 
-            if (time_limit_sec > 0 && (get_time_point() - start_time_lim)/1000000 > time_limit_sec) {
+            if (time_limit_sec > 0 && (get_time_point() - start_time_lim) / 1000000 > time_limit_sec) {
                 printf(" start_time_lim = %f, get_time_point() = %f, time spent = %f \n", start_time_lim, get_time_point(), get_time_point() - start_time_lim);
                 break;
             }
