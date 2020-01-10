@@ -31,59 +31,69 @@ double what_time_is_it_now()
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
 
-int *read_map(char *filename)
+
+int * read_map(char * filename)
 {
     int n = 0;
-    int *map = 0;
-    char *str;
-    FILE *file = fopen(filename, "r");
-    if(!file) file_error(filename);
-    while((str=fgetl(file))){
-        ++n;
-        map = (int*)realloc(map, n * sizeof(int));
-        map[n-1] = atoi(str);
+    int * map = 0;
+    char * str;
+    FILE * file = fopen(filename, "r");
+    if (file == NULL) {
+        file_error(filename);
     }
-    if (file) fclose(file);
+    while ((str=fgetl(file))) {
+        ++n;
+        map = (int *)realloc(map, n * sizeof(int));
+        map[n - 1] = atoi(str);
+    }
+    if (file != NULL) {
+        fclose(file);
+    }
     return map;
 }
 
-void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
+
+void sorta_shuffle(void * const arr, size_t const n, size_t const size,
+                   size_t const sections)
 {
-    size_t i;
-    for(i = 0; i < sections; ++i){
-        size_t start = n*i/sections;
-        size_t end = n*(i+1)/sections;
-        size_t num = end-start;
-        shuffle((char*)arr+(start*size), num, size);
+    for (size_t i = 0; i < sections; ++i) {
+        size_t start = n * i / sections;
+        size_t end = n * (i + 1) / sections;
+        size_t num = end - start;
+        shuffle((char *)arr + (start * size), num, size);
     }
 }
 
-void shuffle(void *arr, size_t n, size_t size)
+
+void shuffle(void * const arr, size_t const n, size_t const size)
 {
-    size_t i;
-    void* swp = (void*)calloc(1, size);
-    for(i = 0; i < n-1; ++i){
-        size_t j = i + random_gen()/(RAND_MAX / (n-i)+1);
-        memcpy(swp,            (char*)arr+(j*size), size);
-        memcpy((char*)arr+(j*size), (char*)arr+(i*size), size);
-        memcpy((char*)arr+(i*size), swp,          size);
+    void * swp = calloc(1, size);
+    for (size_t i = 0; i < n - 1; ++i) {
+        size_t j = i + random_gen() / (RAND_MAX / (n - i) + 1);
+        memcpy(swp, (char *)arr + (j * size), size);
+        memcpy((char *)arr + (j * size), (char *)arr + (i * size), size);
+        memcpy((char *)arr + (i * size), swp, size);
     }
     free(swp);
 }
 
-void del_arg(int argc, char **argv, int index)
+
+void del_arg(int argc, char * * argv, int index)
 {
     int i;
-    for(i = index; i < argc-1; ++i) argv[i] = argv[i+1];
+    for (i = index; i < argc - 1; ++i) {
+        argv[i] = argv[i + 1];
+    }
     argv[i] = 0;
 }
 
-int find_arg(int argc, char* argv[], char *arg)
+int find_arg(int const argc, char * argv[], char * const arg)
 {
-    int i;
-    for(i = 0; i < argc; ++i) {
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)) {
+    for (int i = 0; i < argc; ++i) {
+        if (argv[i] == NULL) {
+            continue;
+        }
+        if (0 == strcmp(argv[i], arg)) {
             del_arg(argc, argv, i);
             return 1;
         }
@@ -91,43 +101,15 @@ int find_arg(int argc, char* argv[], char *arg)
     return 0;
 }
 
-int find_int_arg(int argc, char **argv, char *arg, int def)
-{
-    int i;
-    for(i = 0; i < argc-1; ++i){
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)){
-            def = atoi(argv[i+1]);
-            del_arg(argc, argv, i);
-            del_arg(argc, argv, i);
-            break;
-        }
-    }
-    return def;
-}
 
-float find_float_arg(int argc, char **argv, char *arg, float def)
+int find_int_arg(int const argc, char * * const argv, char * const arg, int def)
 {
-    int i;
-    for(i = 0; i < argc-1; ++i){
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)){
-            def = atof(argv[i+1]);
-            del_arg(argc, argv, i);
-            del_arg(argc, argv, i);
-            break;
+    for (int i = 0; i < argc - 1; ++i) {
+        if (argv[i] == NULL) {
+            continue;
         }
-    }
-    return def;
-}
-
-char *find_char_arg(int argc, char **argv, char *arg, char *def)
-{
-    int i;
-    for(i = 0; i < argc-1; ++i){
-        if(!argv[i]) continue;
-        if(0==strcmp(argv[i], arg)){
-            def = argv[i+1];
+        if (0 == strcmp(argv[i], arg)) {
+            def = atoi(argv[i + 1]);
             del_arg(argc, argv, i);
             del_arg(argc, argv, i);
             break;
@@ -137,38 +119,84 @@ char *find_char_arg(int argc, char **argv, char *arg, char *def)
 }
 
 
-char *basecfg(char *cfgfile)
+float find_float_arg(int const argc, char * * const argv, char * const arg,
+                     float def)
 {
-    char *c = cfgfile;
-    char *next;
-    while((next = strchr(c, '/')))
-    {
-        c = next+1;
+    for (int i = 0; i < argc - 1; ++i) {
+        if (argv[i] == NULL) {
+            continue;
+        }
+        if (0 == strcmp(argv[i], arg)) {
+            def = atof(argv[i + 1]);
+            del_arg(argc, argv, i);
+            del_arg(argc, argv, i);
+            break;
+        }
     }
-    if(!next) while ((next = strchr(c, '\\'))) { c = next + 1; }
+    return def;
+}
+
+
+char * find_char_arg(int const argc, char * * const argv, char * const arg,
+                     char * def)
+{
+    for (int i = 0; i < argc-1; ++i) {
+        if (!argv[i]) {
+            continue;
+        }
+        if (0 == strcmp(argv[i], arg)) {
+            def = argv[i + 1];
+            del_arg(argc, argv, i);
+            del_arg(argc, argv, i);
+            break;
+        }
+    }
+    return def;
+}
+
+
+char * basecfg(char * const cfgfile)
+{
+    char * c = cfgfile;
+    char * next;
+    while ((next = strchr(c, '/'))) {
+        c = next + 1;
+    }
+    if (next == NULL) {
+        while ((next = strchr(c, '\\'))) {
+            c = next + 1;
+        }
+    }
     c = copy_string(c);
     next = strchr(c, '.');
-    if (next) *next = 0;
+    if (next != NULL) {
+        *next = '\0';
+    }
     return c;
 }
 
-int alphanum_to_int(char c)
+
+int alphanum_to_int(char const c)
 {
     return (c < 58) ? c - 48 : c-87;
 }
-char int_to_alphanum(int i)
+
+
+char int_to_alphanum(int const i)
 {
-    if (i == 36) return '.';
+    if (i == 36) {
+        return '.';
+    }
     return (i < 10) ? i + 48 : i + 87;
 }
 
-void pm(int M, int N, float *A)
+
+void pm(int const M, int const N, float const * const A)
 {
-    int i,j;
-    for(i =0 ; i < M; ++i){
-        printf("%d ", i+1);
-        for(j = 0; j < N; ++j){
-            printf("%2.4f, ", A[i*N+j]);
+    for(int i = 0; i < M; ++i) {
+        printf("%d ", i + 1);
+        for (int j = 0; j < N; ++j) {
+            printf("%2.4f, ", A[i * N + j]);
         }
         printf("\n");
     }
