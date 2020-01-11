@@ -45,7 +45,6 @@ list * read_cfg(char const * filename);
 
 LAYER_TYPE string_to_layer_type(char* type)
 {
-
     if (strcmp(type, "[shortcut]") == 0) {
         return SHORTCUT;
     }
@@ -105,6 +104,9 @@ LAYER_TYPE string_to_layer_type(char* type)
     }
     if (strcmp(type, "[max]") == 0 || strcmp(type, "[maxpool]") == 0) {
         return MAXPOOL;
+    }
+    if (strcmp(type, "[local_avg]") == 0 || strcmp(type, "[local_avgpool]") == 0) {
+        return LOCAL_AVGPOOL;
     }
     if (strcmp(type, "[reorg3d]") == 0) {
         return REORG;
@@ -268,11 +270,28 @@ convolutional_layer parse_convolutional(list* options, size_params params)
     int binary = option_find_int_quiet(options, "binary", 0);
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
+    int sway = option_find_int_quiet(options, "sway", 0);
+    int rotate = option_find_int_quiet(options, "rotate", 0);
+    int stretch = option_find_int_quiet(options, "stretch", 0);
+    int stretch_sway = option_find_int_quiet(options, "stretch_sway", 0);
+    if ((sway + rotate + stretch + stretch_sway) > 1) {
+        printf(" Error: should be used only 1 param: sway=1, rotate=1 or stretch=1 in the [convolutional] layer \n");
+        exit(0);
+    }
+    int deform = sway || rotate || stretch || stretch_sway;
+    if (deform && size == 1) {
+        printf(" Error: params (sway=1, rotate=1 or stretch=1) should be used only with size >=3 in the [convolutional] layer \n");
+        exit(0);
+    }
 
-    convolutional_layer layer = make_convolutional_layer(batch, 1, h, w, c, n, groups, size, stride_x, stride_y, dilation, padding, activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer, assisted_excitation, params.train);
+    convolutional_layer layer = make_convolutional_layer(batch, 1, h, w, c, n, groups, size, stride_x, stride_y, dilation, padding, activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, antialiasing, share_layer, assisted_excitation, deform, params.train);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
-
+    layer.sway = sway;
+    layer.rotate = rotate;
+    layer.stretch = stretch;
+    layer.stretch_sway = stretch_sway;
+    layer.angle = option_find_float_quiet(options, "angle", 15);
 
     if (params.net.adam) {
         layer.B1 = params.net.B1;
@@ -428,14 +447,37 @@ int* parse_yolo_mask(char* a, int* num)
 }
 
 
-layer parse_yolo(list* options, size_params params)
+float *get_classes_multipliers(char *cpc, const int classes)
+{
+    float *classes_multipliers = NULL;
+    if (cpc) {
+        int classes_counters = classes;
+        int *counters_per_class = parse_yolo_mask(cpc, &classes_counters);
+        if (classes_counters != classes) {
+            printf(" number of values in counters_per_class = %d doesn't match with classes = %d \n", classes_counters, classes);
+            exit(0);
+        }
+        float max_counter = 0;
+        int i;
+        for (i = 0; i < classes_counters; ++i) if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
+        for (i = 0; i < classes_counters; ++i) classes_multipliers[i] = max_counter / counters_per_class[i];
+        free(counters_per_class);
+        printf(" classes_multipliers: ");
+        for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
+        printf("\n");
+    }
+    return classes_multipliers;
+}
+
+
+layer parse_yolo(list * options, size_params params)
 {
     int classes = option_find_int(options, "classes", 20);
     int total = option_find_int(options, "num", 1);
     int num = total;
-
-    char* a = option_find_str(options, "mask", 0);
-    int* mask = parse_yolo_mask(a, &num);
+    char * a = option_find_str(options, "mask", 0);
+    int * mask = parse_yolo_mask(a, &num);
     int max_boxes = option_find_int_quiet(options, "max", 90);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     if (l.outputs != params.inputs) {
@@ -444,6 +486,9 @@ layer parse_yolo(list* options, size_params params)
         exit(EXIT_FAILURE);
     }
     // assert(l.outputs == params.inputs);
+
+    char *cpc = option_find_str(options, "counters_per_class", 0);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
@@ -481,7 +526,7 @@ layer parse_yolo(list* options, size_params params)
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char* map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -544,6 +589,9 @@ layer parse_gaussian_yolo(list* options, size_params params) // Gaussian_YOLOv3
     }
     //assert(l.outputs == params.inputs);
 
+    char *cpc = option_find_str(options, "counters_per_class", 0);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes);
+
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
@@ -581,7 +629,7 @@ layer parse_gaussian_yolo(list* options, size_params params) // Gaussian_YOLOv3
     l.ignore_thresh = option_find_float(options, "ignore_thresh", .5);
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     char* map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -630,7 +678,7 @@ layer parse_region(list* options, size_params params)
     l.thresh = option_find_float(options, "thresh", .5);
     l.classfix = option_find_int_quiet(options, "classfix", 0);
     l.absolute = option_find_int_quiet(options, "absolute", 0);
-    l.random = option_find_int_quiet(options, "random", 0);
+    l.random = option_find_float_quiet(options, "random", 0);
 
     l.coord_scale = option_find_float(options, "coord_scale", 1);
     l.object_scale = option_find_float(options, "object_scale", 1);
@@ -686,7 +734,7 @@ detection_layer parse_detection(list* options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
-    layer.random = option_find_int_quiet(options, "random", 0);
+    layer.random = option_find_float_quiet(options, "random", 0);
     layer.reorg = option_find_int_quiet(options, "reorg", 0);
     return layer;
 }
@@ -766,7 +814,31 @@ layer parse_reorg_old(list* options, size_params params)
 }
 
 
-maxpool_layer parse_maxpool(list* options, size_params params)
+maxpool_layer parse_local_avgpool(list *options, size_params params)
+{
+    int stride = option_find_int(options, "stride", 1);
+    int stride_x = option_find_int_quiet(options, "stride_x", stride);
+    int stride_y = option_find_int_quiet(options, "stride_y", stride);
+    int size = option_find_int(options, "size", stride);
+    int padding = option_find_int_quiet(options, "padding", size - 1);
+    int maxpool_depth = 0;
+    int out_channels = 1;
+    int antialiasing = 0;
+    const int avgpool = 1;
+
+    int batch, h, w, c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch = params.batch;
+    if (!(h && w && c)) error("Layer before [local_avgpool] layer must output image.");
+
+    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
+    return layer;
+}
+
+
+maxpool_layer parse_maxpool(list * options, size_params params)
 {
     int stride = option_find_int(options, "stride",1);
     int stride_x = option_find_int_quiet(options, "stride_x", stride);
@@ -776,16 +848,17 @@ maxpool_layer parse_maxpool(list* options, size_params params)
     int maxpool_depth = option_find_int_quiet(options, "maxpool_depth", 0);
     int out_channels = option_find_int_quiet(options, "out_channels", 1);
     int antialiasing = option_find_int_quiet(options, "antialiasing", 0);
+    const int avgpool = 0;
 
     int h = params.h;
     int w = params.w;
     int c = params.c;
     int batch = params.batch;
     if (!(h && w && c)) {
-        error("Layer before maxpool layer must output image.");
+        error("Layer before [maxpool] layer must output image.");
     }
 
-    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, params.train);
+    maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
     return layer;
 }
 
@@ -806,8 +879,23 @@ avgpool_layer parse_avgpool(list* options, size_params params)
 
 dropout_layer parse_dropout(list* options, size_params params)
 {
-    float probability = option_find_float(options, "probability", .5);
-    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability);
+    float probability = option_find_float(options, "probability", .2);
+    int dropblock = option_find_int_quiet(options, "dropblock", 0);
+    float dropblock_size_rel = option_find_float_quiet(options, "dropblock_size_rel", 0);
+    int dropblock_size_abs = option_find_float_quiet(options, "dropblock_size_abs", 0);
+    if (dropblock_size_abs > params.w || dropblock_size_abs > params.h) {
+        printf(" [dropout] - dropblock_size_abs = %d that is bigger than layer size %d x %d \n", dropblock_size_abs, params.w, params.h);
+        dropblock_size_abs = min_val_cmp(params.w, params.h);
+    }
+    if (dropblock && !dropblock_size_rel && !dropblock_size_abs) {
+        printf(" [dropout] - None of the parameters (dropblock_size_rel or dropblock_size_abs) are set, will be used: dropblock_size_abs = 7 \n");
+        dropblock_size_abs = 7;
+    }
+    if (dropblock_size_rel && dropblock_size_abs) {
+        printf(" [dropout] - Both parameters are set, only the parameter will be used: dropblock_size_abs = %d \n", dropblock_size_abs);
+        dropblock_size_rel = 0;
+    }
+    dropout_layer layer = make_dropout_layer(params.batch, params.inputs, probability, dropblock, dropblock_size_rel, dropblock_size_abs, params.w, params.h, params.c);
     layer.out_w = params.w;
     layer.out_h = params.h;
     layer.out_c = params.c;
@@ -827,30 +915,73 @@ layer parse_normalization(list* options, size_params params)
 
 layer parse_batchnorm(list* options, size_params params)
 {
-    layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c);
+    layer l = make_batchnorm_layer(params.batch, params.w, params.h, params.c, params.train);
     return l;
 }
 
 
 layer parse_shortcut(list* options, size_params params, network net)
 {
-    char *activation_s = option_find_str(options, "activation", "logistic");
+    char *activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
 
-    int assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
-    char* l = option_find(options, "from");
-    int index = atoi(l);
-    if (index < 0) {
-        index = params.index + index;
+    char *weights_type_str = option_find_str_quiet(options, "weights_type", "none");
+    WEIGHTS_TYPE_T weights_type = NO_WEIGHTS;
+    if(strcmp(weights_type_str, "per_feature") == 0) weights_type = PER_FEATURE;
+    else if (strcmp(weights_type_str, "per_channel") == 0) weights_type = PER_CHANNEL;
+
+    char *weights_normalizion_str = option_find_str_quiet(options, "weights_normalizion", "none");
+    WEIGHTS_NORMALIZATION_T weights_normalizion = NO_NORMALIZATION;
+    if (strcmp(weights_normalizion_str, "relu") == 0) weights_normalizion = RELU_NORMALIZATION;
+    else if (strcmp(weights_normalizion_str, "softmax") == 0) weights_normalizion = SOFTMAX_NORMALIZATION;
+
+    char *l = option_find(options, "from");
+    int len = strlen(l);
+    if (!l) error("Route Layer must specify input layers: from = ...");
+    int n = 1;
+    int i;
+    for (i = 0; i < len; ++i) {
+        if (l[i] == ',') ++n;
     }
 
-    int batch = params.batch;
-    layer from = net.layers[index];
-    if (from.antialiasing) {
-        from = *from.input_layer;
+    int* layers = (int*)calloc(n, sizeof(int));
+    int* sizes = (int*)calloc(n, sizeof(int));
+    float **layers_output = (float **)calloc(n, sizeof(float *));
+    float **layers_delta = (float **)calloc(n, sizeof(float *));
+    float **layers_output_gpu = (float **)calloc(n, sizeof(float *));
+    float **layers_delta_gpu = (float **)calloc(n, sizeof(float *));
+
+    for (i = 0; i < n; ++i) {
+        int index = atoi(l);
+        l = strchr(l, ',') + 1;
+        if (index < 0) index = params.index + index;
+        layers[i] = index;
+        sizes[i] = params.net.layers[index].outputs;
+        layers_output[i] = params.net.layers[index].output;
+        layers_delta[i] = params.net.layers[index].delta;
     }
 
-    layer s = make_shortcut_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c, assisted_excitation, activation, params.train);
+#ifdef GPU
+    for (i = 0; i < n; ++i) {
+        layers_output_gpu[i] = params.net.layers[layers[i]].output_gpu;
+        layers_delta_gpu[i] = params.net.layers[layers[i]].delta_gpu;
+    }
+#endif// GPU
+
+    layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta,
+        layers_output_gpu, layers_delta_gpu, weights_type, weights_normalizion, activation, params.train);
+
+    free(layers_output_gpu);
+    free(layers_delta_gpu);
+
+    for (i = 0; i < n; ++i) {
+        int index = layers[i];
+        assert(params.w == net.layers[index].out_w && params.h == net.layers[index].out_h);
+
+        if (params.w != net.layers[index].out_w || params.h != net.layers[index].out_h || params.c != net.layers[index].out_c)
+            fprintf(stderr, " (%4d x%4d x%4d) + (%4d x%4d x%4d) \n",
+                params.w, params.h, params.c, net.layers[index].out_w, net.layers[index].out_h, params.net.layers[index].out_c);
+    }
 
     return s;
 }
@@ -1026,10 +1157,11 @@ learning_rate_policy get_policy(char* s)
 
 void parse_net_options(list* options, network* net)
 {
+    net->max_batches = option_find_int(options, "max_batches", 0);
     net->batch = option_find_int(options, "batch",1);
     net->learning_rate = option_find_float(options, "learning_rate", .001);
     net->learning_rate_min = option_find_float_quiet(options, "learning_rate_min", .00001);
-    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", 1000);
+    net->batches_per_cycle = option_find_int_quiet(options, "sgdr_cycle", net->max_batches);
     net->batches_cycle_mult = option_find_int_quiet(options, "sgdr_mult", 2);
     net->momentum = option_find_float(options, "momentum", .9);
     net->decay = option_find_float(options, "decay", .0001);
@@ -1070,6 +1202,7 @@ void parse_net_options(list* options, network* net)
     else if (mosaic) net->mixup = 3;
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
+    net->resize_step = option_find_float_quiet(options, "resize_step", 32);
 
     net->angle = option_find_float_quiet(options, "angle", 0);
     net->aspect = option_find_float_quiet(options, "aspect", 1);
@@ -1144,7 +1277,7 @@ void parse_net_options(list* options, network* net)
     } else if (net->policy == POLY || net->policy == RANDOM) {
         //net->power = option_find_float(options, "power", 1);
     }
-    net->max_batches = option_find_int(options, "max_batches", 0);
+
 }
 
 
@@ -1275,6 +1408,8 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
             l = parse_batchnorm(options, params);
         } else if (lt == MAXPOOL) {
             l = parse_maxpool(options, params);
+        } else if (lt == LOCAL_AVGPOOL) {
+            l = parse_local_avgpool(options, params);
         } else if (lt == REORG) {
             l = parse_reorg(options, params);
         } else if (lt == REORG_OLD) {
@@ -1561,7 +1696,20 @@ void save_convolutional_weights_binary(layer l, FILE* fp)
 }
 
 
-void save_convolutional_weights(layer l, FILE* fp)
+void save_shortcut_weights(layer l, FILE *fp)
+{
+#ifdef GPU
+    if (gpu_index >= 0) {
+        pull_shortcut_layer(l);
+    }
+#endif
+    int num = l.nweights;
+    fwrite(l.weights, sizeof(float), num, fp);
+
+}
+
+
+void save_convolutional_weights(layer l, FILE * fp)
 {
     if (l.binary) {
         // save_convolutional_weights_binary(l, fp);
@@ -1594,6 +1742,7 @@ void save_batchnorm_weights(layer l, FILE* fp)
         pull_batchnorm_layer(l);
     }
 #endif
+    fwrite(l.biases, sizeof(float), l.c, fp);
     fwrite(l.scales, sizeof(float), l.c, fp);
     fwrite(l.rolling_mean, sizeof(float), l.c, fp);
     fwrite(l.rolling_variance, sizeof(float), l.c, fp);
@@ -1642,6 +1791,9 @@ void save_weights_upto(network net, char* filename, int cutoff)
         layer l = net.layers[i];
         if (l.type == CONVOLUTIONAL && l.share_layer == NULL) {
             save_convolutional_weights(l, fp);
+        }
+        if (l.type == SHORTCUT && l.nweights > 0) {
+            save_shortcut_weights(l, fp);
         }
         if (l.type == CONNECTED) {
             save_connected_weights(l, fp);
@@ -1754,6 +1906,7 @@ void load_connected_weights(layer l, FILE* fp, int transpose)
 
 void load_batchnorm_weights(layer l, FILE* fp)
 {
+    fread(l.biases, sizeof(float), l.c, fp);
     fread(l.scales, sizeof(float), l.c, fp);
     fread(l.rolling_mean, sizeof(float), l.c, fp);
     fread(l.rolling_variance, sizeof(float), l.c, fp);
@@ -1856,6 +2009,22 @@ void load_convolutional_weights(layer l, FILE* fp)
 #endif
 }
 
+void load_shortcut_weights(layer l, FILE *fp)
+{
+    if (l.binary) {
+        //load_convolutional_weights_binary(l, fp);
+        //return;
+    }
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = fread(l.weights, sizeof(float), num, fp);
+    if (read_bytes > 0 && read_bytes < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+#ifdef GPU
+    if (gpu_index >= 0) {
+        push_shortcut_layer(l);
+    }
+#endif
+}
 
 void load_weights_upto(network* net, char* filename, int cutoff)
 {
@@ -1896,6 +2065,9 @@ void load_weights_upto(network* net, char* filename, int cutoff)
         if (l.dontload) continue;
         if (l.type == CONVOLUTIONAL && l.share_layer == NULL) {
             load_convolutional_weights(l, fp);
+        }
+        if (l.type == SHORTCUT && l.nweights > 0) {
+            load_shortcut_weights(l, fp);
         }
         if (l.type == CONNECTED) {
             load_connected_weights(l, fp, transpose);
@@ -1977,10 +2149,11 @@ network* load_network_custom(char* cfg, char* weights, int clear, int batch)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
     network* net = calloc(1, sizeof(network));
-    *net = parse_network_cfg_custom(cfg, batch, 0);
+    *net = parse_network_cfg_custom(cfg, batch, 1);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);
     }
+    //fuse_conv_batchnorm(*net);
     if (clear) {
         *net->seen = 0;
     }

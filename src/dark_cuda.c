@@ -101,7 +101,11 @@ dim3 cuda_gridsize(size_t n){
         x = ceil(sqrt(k));
         y = (n-1)/(x*BLOCK) + 1;
     }
-    dim3 d = { (unsigned int)x, (unsigned int)y, 1 };
+    //dim3 d = { (unsigned int)x, (unsigned int)y, 1 };
+    dim3 d;
+    d.x = x;
+    d.y = y;
+    d.z = 1;
     //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
     return d;
 }
@@ -112,6 +116,7 @@ static int streamInit[16] = { 0 };
 cudaStream_t get_cuda_stream() {
     int i = cuda_get_device();
     if (!streamInit[i]) {
+        //printf("Create CUDA-stream \n");
         cudaError_t status = cudaStreamCreate(&streamsArray[i]);
         //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamNonBlocking);
         if (status != cudaSuccess) {
@@ -364,6 +369,21 @@ float *cuda_make_array(float *x, size_t n)
     return x_gpu;
 }
 
+void **cuda_make_array_pointers(void **x, size_t n)
+{
+    void **x_gpu;
+    size_t size = sizeof(void*) * n;
+    cudaError_t status = cudaMalloc((void **)&x_gpu, size);
+    if (status != cudaSuccess) fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
+    CHECK_CUDA(status);
+    if (x) {
+        status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyDefault, get_cuda_stream());
+        CHECK_CUDA(status);
+    }
+    if (!x_gpu) error("Cuda malloc failed\n");
+    return x_gpu;
+}
+
 void cuda_random(float *x_gpu, size_t n)
 {
     static curandGenerator_t gen[16];
@@ -408,7 +428,7 @@ int *cuda_make_int_array_new_api(int *x, size_t n)
 	cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     CHECK_CUDA(status);
 	if (x) {
-		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
+		//status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
         cudaError_t status = cudaMemcpyAsync(x_gpu, x, size, cudaMemcpyHostToDevice, get_cuda_stream());
         CHECK_CUDA(status);
 	}
@@ -468,6 +488,24 @@ int get_gpu_compute_capability(int i)
     CHECK_CUDA(status);
     int cc = prop.major * 100 + prop.minor * 10;    // __CUDA_ARCH__ format
     return cc;
+}
+
+void show_cuda_cudnn_info()
+{
+    int cuda_version = 0, cuda_driver_version = 0, device_count = 0;
+    CHECK_CUDA(cudaRuntimeGetVersion(&cuda_version));
+    CHECK_CUDA(cudaDriverGetVersion(&cuda_driver_version));
+    fprintf(stderr, " CUDA-version: %d (%d)", cuda_version, cuda_driver_version);
+    if(cuda_version < cuda_driver_version) fprintf(stderr, "\n Warning: CUDA-version is lower than Driver-version! \n");
+#ifdef CUDNN
+    fprintf(stderr, ", cuDNN: %d.%d.%d", CUDNN_MAJOR, CUDNN_MINOR, CUDNN_PATCHLEVEL);
+#endif  // CUDNN
+#ifdef CUDNN_HALF
+    fprintf(stderr, ", CUDNN_HALF=1");
+#endif  // CUDNN_HALF
+    CHECK_CUDA(cudaGetDeviceCount(&device_count));
+    fprintf(stderr, ", GPU count: %d ", device_count);
+    fprintf(stderr, " \n");
 }
 
 #else // GPU

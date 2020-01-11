@@ -33,6 +33,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "scale_channels_layer.h"
+#include "sam_layer.h"
 #include "yolo_layer.h"
 #include "gaussian_yolo_layer.h"
 #include "upsample_layer.h"
@@ -577,6 +578,10 @@ int resize_network(network * const net, int w, int h)
             resize_crop_layer(&l, w, h);
         } else if (l.type == MAXPOOL) {
             resize_maxpool_layer(&l, w, h);
+        } else if (l.type == LOCAL_AVGPOOL) {
+            resize_maxpool_layer(&l, w, h);
+        } else if (l.type == BATCHNORM) {
+            resize_batchnorm_layer(&l, w, h);
         } else if (l.type == REGION) {
             resize_region_layer(&l, w, h);
         } else if (l.type == YOLO) {
@@ -586,11 +591,15 @@ int resize_network(network * const net, int w, int h)
         } else if (l.type == ROUTE) {
             resize_route_layer(&l, net);
         } else if (l.type == SHORTCUT) {
-            resize_shortcut_layer(&l, w, h);
+            resize_shortcut_layer(&l, w, h, net);
         } else if (l.type == SCALE_CHANNELS) {
             resize_scale_channels_layer(&l, net);
+        } else if (l.type == SAM) {
+            resize_sam_layer(&l, w, h);
         } else if (l.type == DROPOUT) {
             resize_dropout_layer(&l, inputs);
+            l.out_w = l.w = w;
+            l.out_h = l.h = h;
             l.output = net->layers[i - 1].output;
             l.delta = net->layers[i - 1].delta;
 #ifdef GPU
@@ -618,10 +627,12 @@ int resize_network(network * const net, int w, int h)
         }
         inputs = l.outputs;
         net->layers[i] = l;
-        if (l.type != DROPOUT) {
-            w = l.out_w;
-            h = l.out_h;
-        }
+        // if (l.type != DROPOUT) {
+        //     w = l.out_w;
+        //     h = l.out_h;
+        // }
+        w = l.out_w;
+        h = l.out_h;
         // if(l.type == AVGPOOL) {
         //     break;
         // }
@@ -1220,14 +1231,12 @@ void fuse_conv_batchnorm(network net)
 
             if (l->batch_normalize) {
                 for (int f = 0; f < l->n; ++f) {
-                    // l->biases[f] -= (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
                     l->biases[f] -= (double)l->scales[f] * l->rolling_mean[f] / sqrt((double)l->rolling_variance[f] + .000001);
 
                     size_t const filter_size = l->size * l->size * l->c / l->groups;
                     for (int i = 0; i < filter_size; ++i) {
                         int const w_index = f * filter_size + i;
 
-                        // l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
                         l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / sqrt((double)l->rolling_variance[f] + .000001);
                     }
                 }
