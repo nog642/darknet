@@ -86,11 +86,15 @@ static float relu(float src) {
     return 0;
 }
 
+
 void shortcut_multilayer_cpu(int size, int src_outputs, int batch, int n, int *outputs_of_layers, float **layers_output, float *out, float *in, float *weights, int nweights, WEIGHTS_NORMALIZATION_T weights_normalizion)
 {
     // nweights - l.n or l.n*l.c or (l.n*l.c*l.h*l.w)
-    const int layer_step = nweights / (n + 1);    // 1 or l.c or (l.c * l.h * l.w)
-    const int step = src_outputs / layer_step; // (l.c * l.h * l.w) or (l.w*l.h) or 1
+    const int layer_step = nweights / (n + 1);  // 1 or l.c or (l.c * l.h * l.w)
+    int step = 0;
+    if (weights) {
+        step = src_outputs / layer_step;  // (l.c * l.h * l.w) or (l.w*l.h) or 1
+    }
 
     int id;
     #pragma omp parallel for
