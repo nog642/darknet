@@ -223,22 +223,22 @@ void train_detector(char * datacfg, char * cfgfile, char * weightfile,
         }
         load_thread = load_data(args);
 
-        /*
-        int k;
-        for(k = 0; k < l.max_boxes; ++k){
-        box b = float_to_box(train.y.vals[10] + 1 + k*5);
-        if(!b.x) break;
-        printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
-        }
-        image im = float_to_image(448, 448, 3, train.X.vals[10]);
-        int k;
-        for(k = 0; k < l.max_boxes; ++k){
-        box b = float_to_box(train.y.vals[10] + 1 + k*5);
-        printf("%d %d %d %d\n", truth.x, truth.y, truth.w, truth.h);
-        draw_bbox(im, b, 8, 1,0,0);
-        }
-        save_image(im, "truth11");
-        */
+        // int k;
+        // for (k = 0; k < l.max_boxes; ++k) {
+        //     box b = float_to_box(train.y.vals[10] + 1 + k * 5);
+        //     if (!b.x) {
+        //         break;
+        //     }
+        //     printf("loaded: %f %f %f %f\n", b.x, b.y, b.w, b.h);
+        // }
+        // image im = float_to_image(448, 448, 3, train.X.vals[10]);
+        // int k;
+        // for (k = 0; k < l.max_boxes; ++k) {
+        //     box b = float_to_box(train.y.vals[10] + 1 + k * 5);
+        //     printf("%d %d %d %d\n", truth.x, truth.y, truth.w, truth.h);
+        //     draw_bbox(im, b, 8, 1,0,0);
+        // }
+        // save_image(im, "truth11");
 
         printf("Loaded: %lf seconds\n", (what_time_is_it_now() - time));
 
@@ -248,8 +248,7 @@ void train_detector(char * datacfg, char * cfgfile, char * weightfile,
         if (ngpus == 1) {
             int wait_key = (dont_show) ? 0 : 1;
             loss = train_network_waitkey(net, train, wait_key);
-        }
-        else {
+        } else {
             loss = train_networks(nets, ngpus, train, 4);
         }
 #else
@@ -276,7 +275,9 @@ void train_detector(char * datacfg, char * cfgfile, char * weightfile,
         }
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
 
+#ifdef OPENCV
         int draw_precision = 0;
+#endif  // OPENCV
         if (calc_map && (i >= next_map_calc || i == net.max_batches)) {
             if (l.random) {
                 printf("Resizing to initial size: %d x %d \n", init_w, init_h);
@@ -308,12 +309,13 @@ void train_detector(char * datacfg, char * cfgfile, char * weightfile,
                 sprintf(buff, "%s/%s_best.weights", backup_directory, base);
                 save_weights(net, buff);
             }
-
+#ifdef OPENCV
             draw_precision = 1;
+#endif  // OPENCV
         }
 #ifdef OPENCV
         draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port);
-#endif    // OPENCV
+#endif  // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {

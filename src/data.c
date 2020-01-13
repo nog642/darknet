@@ -1071,22 +1071,18 @@ data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
             // float scale = rand_precalc_random(.25, 2, r_scale);
             rand_precalc_random(.25, 2, r_scale);
 
-            if (letter_box)
-            {
+            if (letter_box) {
                 float img_ar = (float)ow / (float)oh;
                 float net_ar = (float)w / (float)h;
                 float result_ar = img_ar / net_ar;
                 //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
-                if (result_ar > 1)  // sheight - should be increased
-                {
+                if (result_ar > 1) {  // sheight - should be increased
                     float oh_tmp = ow / net_ar;
                     float delta_h = (oh_tmp - oh)/2;
                     ptop = ptop - delta_h;
                     pbot = pbot - delta_h;
                     //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
-                }
-                else  // swidth - should be increased
-                {
+                } else {  // swidth - should be increased
                     float ow_tmp = oh * net_ar;
                     float delta_w = (ow_tmp - ow)/2;
                     pleft = pleft - delta_w;
@@ -1105,10 +1101,13 @@ data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
             float dy = ((float)ptop / oh) / sy;
 
 
-            int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            int min_w_h = fill_truth_detection(filename, boxes, truth, classes,
+                                               flip, dx, dy, 1. / sx, 1. / sy,
+                                               w, h);
 
             if ((min_w_h / 8) < blur && blur > 1) {
-                blur = min_w_h / 8;  // disable blur if one of the objects is too small
+                // disable blur if one of the objects is too small
+                blur = min_w_h / 8;
             }
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
@@ -1274,7 +1273,7 @@ data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
     float r2 = 0.f;
     float r3 = 0.f;
     float r4 = 0.f;
-    float r_scale;
+    float r_scale = 0.f;
     float dhue = 0.f;
     float dsat = 0.f;
     float dexp = 0.f;
