@@ -40,7 +40,7 @@
 #include "parser.h"
 
 
-load_args get_base_args(network* net)
+load_args get_base_args(network * net)
 {
     load_args args = {0};
     args.w = net->w;
@@ -67,12 +67,12 @@ int get_current_batch(network net)
 
 void reset_momentum(network net)
 {
-    if (net.momentum == 0) {
+    if (net.momentum == 0.f) {
         return;
     }
-    net.learning_rate = 0;
-    net.momentum = 0;
-    net.decay = 0;
+    net.learning_rate = 0.f;
+    net.momentum = 0.f;
+    net.decay = 0.f;
 // #ifdef GPU
 //     if (net.gpu_index >= 0) {
 //         update_network_gpu(net);
@@ -81,9 +81,9 @@ void reset_momentum(network net)
 }
 
 
-void reset_network_state(network* net, int b)
+void reset_network_state(network * net, int b)
 {
-    for (int i = 0; i < net->n; ++i) {
+    for (size_t i = 0; i < net->n; ++i) {
 #ifdef GPU
         layer l = net->layers[i];
         if (l.state_gpu) {
@@ -97,7 +97,7 @@ void reset_network_state(network* net, int b)
 }
 
 
-void reset_rnn(network* net)
+void reset_rnn(network * net)
 {
     reset_network_state(net, 0);
 }

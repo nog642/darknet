@@ -2003,48 +2003,45 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     }
 }
 
+
 void gemm_nn_fast(int M, int N, int K, float ALPHA,
-    float *A, int lda,
-    float *B, int ldb,
-    float *C, int ldc)
+                  float * A, int lda,
+                  float * B, int ldb,
+                  float * C, int ldc)
 {
-    int i, j, k;
     #pragma omp parallel for
-    for (i = 0; i < M; ++i) {
-        for (k = 0; k < K; ++k) {
-            PUT_IN_REGISTER float A_PART = ALPHA*A[i*lda + k];
-            for (j = 0; j < N; ++j) {
-                C[i*ldc + j] += A_PART*B[k*ldb + j];
+    for (int i = 0; i < M; ++i) {
+        for (int k = 0; k < K; ++k) {
+            PUT_IN_REGISTER float A_PART = ALPHA * A[i * lda + k];
+            for (int j = 0; j < N; ++j) {
+                C[i * ldc + j] += A_PART * B[k * ldb + j];
             }
         }
     }
 }
 
+
 void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
-    uint32_t *A, int lda,
-    uint32_t *B, int ldb,
-    float *C, int ldc, float *mean_arr)
+                              uint32_t * A, int lda,
+                              uint32_t * B, int ldb,
+                              float * C, int ldc, float * mean_arr)
 {
-    int i;
     #pragma omp parallel for
-    for (i = 0; i < M; ++i) {   // l.n
-        int j, s;
+    for (int i = 0; i < M; ++i) {   // l.n
         float mean_val = mean_arr[i];
         //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
-        for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
-        {
-            //PUT_IN_REGISTER float A_PART = 1*a[i*k + s];
+        for (int s = 0; s < K; ++s) {  // l.size * l.size * l.c / 32  or (l.size * l.size * l.c)
+            // PUT_IN_REGISTER float A_PART = 1 * a[i * k + s];
             PUT_IN_REGISTER uint32_t A_PART = A[i * lda + s];
-            for (j = 0; j < N; ++j) // out_h*out_w;
-            {
-                //c[i*n + j] += A_PART*b[s*n + j];
+            for (int j = 0; j < N; ++j) {  // out_h * out_w;
+                // c[i * n + j] += A_PART * b[s * n + j];
                 PUT_IN_REGISTER uint32_t B_PART = B[s * ldb + j];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
-                //printf(" xnor_result = %d, ", xnor_result);
+                // printf(" xnor_result = %d, ", xnor_result);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
 
-                C[i*ldc + j] += (2 * count - 32) * mean_val;
-                //c[i*n + j] += count*mean;
+                C[i * ldc + j] += (2 * count - 32) * mean_val;
+                // c[i * n + j] += count*mean;
             }
         }
     }
@@ -2052,36 +2049,30 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
 
 
 void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
-    float *weights, float *input, float *output, float *mean)
+                    float * weights, float * input, float * output, float * mean)
 {
-    const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
-    const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
-    //int i, f, j;
+    // int const out_h = (h + 2 * pad - ksize) / stride + 1;  // output_height=input_height for stride=1 and pad=1
+    // int const out_w = (w + 2 * pad - ksize) / stride + 1;  // output_width=input_width for stride=1 and pad=1
 
-    int fil;
     // filter index
-    #pragma omp parallel for      // "omp parallel for" - automatic parallelization of loop by using OpenMP
-    for (fil = 0; fil < n; ++fil) {
-        int chan, y, x, f_y, f_x;
+    #pragma omp parallel for  // "omp parallel for" - automatic parallelization of loop by using OpenMP
+    for (int fil = 0; fil < n; ++fil) {
         // channel index
-        for (chan = 0; chan < c; ++chan)
+        for (int chan = 0; chan < c; ++chan) {
             // input - y
-            for (y = 0; y < h; ++y)
+            for (int y = 0; y < h; ++y) {
                 // input - x
-                for (x = 0; x < w; ++x)
-                {
-                    int const output_index = fil*w*h + y*w + x;
-                    int const weights_pre_index = fil*c*ksize*ksize + chan*ksize*ksize;
-                    int const input_pre_index = chan*w*h;
+                for (int x = 0; x < w; ++x) {
+                    int const output_index = fil * w * h + y * w + x;
+                    int const weights_pre_index = fil * c * ksize * ksize + chan * ksize * ksize;
+                    int const input_pre_index = chan * w * h;
                     float sum = 0;
 
                     // filter - y
-                    for (f_y = 0; f_y < ksize; ++f_y)
-                    {
+                    for (int f_y = 0; f_y < ksize; ++f_y) {
                         int input_y = y + f_y - pad;
                         // filter - x
-                        for (f_x = 0; f_x < ksize; ++f_x)
-                        {
+                        for (int f_x = 0; f_x < ksize; ++f_x) {
                             int input_x = x + f_x - pad;
                             if (input_y < 0 || input_x < 0 || input_y >= h || input_x >= w) continue;
 
@@ -2096,8 +2087,11 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
                     //        l.weights[filters][channels][filter_width][filter_height];
                     output[output_index] += sum;
                 }
+            }
+        }
     }
 }
+
 
 static inline int popcnt_64(uint64_t val64) {
 #ifdef WIN32  // Windows

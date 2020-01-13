@@ -103,9 +103,11 @@ class JSON_sender
     int timeout; // master sock timeout, shutdown after timeout usec.
     int close_all_sockets;
 
-    int _write(int sock, char const*const s, int len)
+    ssize_t _write(int sock, char const * const s, size_t len)
     {
-        if (len < 1) { len = strlen(s); }
+        if (len < 1) {
+            len = strlen(s);
+        }
         return ::send(sock, s, len, 0);
     }
 
@@ -192,34 +194,32 @@ public:
         return sock != INVALID_SOCKET;
     }
 
-    bool write(char const* outputbuf)
+    bool write(char const * outputbuf)
     {
         fd_set rread = master;
-        struct timeval select_timeout = { 0, 0 };
-        struct timeval socket_timeout = { 0, timeout };
-        if (::select(maxfd + 1, &rread, NULL, NULL, &select_timeout) <= 0)
-            return true; // nothing broken, there's just noone listening
+        struct timeval select_timeout = {0, 0};
+        struct timeval socket_timeout = {0, timeout};
+        if (::select(maxfd + 1, &rread, NULL, NULL, &select_timeout) <= 0) {
+            return true;  // nothing broken, there's just noone listening
+        }
 
-        int outlen = static_cast<int>(strlen(outputbuf));
+        size_t outlen = strlen(outputbuf);
 
 #ifdef _WIN32
-        for (unsigned i = 0; i<rread.fd_count; i++)
-        {
+        for (unsigned i = 0; i < rread.fd_count; i++) {
             int addrlen = sizeof(SOCKADDR);
-            SOCKET s = rread.fd_array[i];    // fd_set on win is an array, while ...
+            SOCKET s = rread.fd_array[i];  // fd_set on win is an array, while ...
 #else
-        for (int s = 0; s <= maxfd; s++)
-        {
+        for (int s = 0; s <= maxfd; s++) {
             socklen_t addrlen = sizeof(SOCKADDR);
-            if (!FD_ISSET(s, &rread))      // ... on linux it's a bitmask ;)
+            if (!FD_ISSET(s, &rread)) {  // ... on linux it's a bitmask ;)
                 continue;
+            }
 #endif
-            if (s == sock) // request on master socket, accept and send main header.
-            {
-                SOCKADDR_IN address = { 0 };
-                SOCKET      client = ::accept(sock, (SOCKADDR*)&address, &addrlen);
-                if (client == SOCKET_ERROR)
-                {
+            if (s == sock) {  // request on master socket, accept and send main header.
+                SOCKADDR_IN address = {0};
+                SOCKET client = ::accept(sock, (SOCKADDR *)&address, &addrlen);
+                if (client == SOCKET_ERROR) {
                     cerr << "error JSON_sender: couldn't accept connection on sock " << sock << " !" << endl;
                     return false;
                 }
@@ -229,7 +229,7 @@ public:
                 if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (char *)&socket_timeout, sizeof(socket_timeout)) < 0) {
                     cerr << "error JSON_sender: SO_SNDTIMEO setsockopt failed\n";
                 }
-                maxfd = (maxfd>client ? maxfd : client);
+                maxfd = maxfd > client ? maxfd : client;
                 FD_SET(client, &master);
                 _write(client, "HTTP/1.0 200 OK\r\n", 0);
                 _write(client,
@@ -254,10 +254,11 @@ public:
                 // sprintf(head, "\r\nContent-Length: %zu\r\n\r\n", outlen);
                 // sprintf(head, "--boundary\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n", outlen);
                 // _write(s, head, 0);
-                if (!close_all_sockets) _write(s, ", \n", 0);
-                int n = _write(s, outputbuf, outlen);
-                if (n < outlen)
-                {
+                if (!close_all_sockets) {
+                    _write(s, ", \n", 0);
+                }
+                ssize_t n = _write(s, outputbuf, outlen);
+                if (n < 0 || (size_t)n < outlen) {
                     cerr << "JSON_sender: kill client " << s << endl;
                     ::shutdown(s, 2);
                     FD_CLR(s, &master);
@@ -275,7 +276,8 @@ public:
             cerr << "JSON_sender: close acceptor: " << result << " \n\n";
         }
         return true;
-        }
+    }
+
 };
 // ----------------------------------------
 
@@ -292,26 +294,27 @@ void send_json_custom(char const* send_buf, int port, int timeout)
 {
     try {
         std::lock_guard<std::mutex> lock(mtx);
-        if(!js_ptr) js_ptr.reset(new JSON_sender(port, timeout));
+        if (!js_ptr) {
+            js_ptr.reset(new JSON_sender(port, timeout));
+        }
 
         js_ptr->write(send_buf);
-    }
-    catch (...) {
+    } catch (...) {
         cerr << " Error in send_json_custom() function \n";
     }
 }
 
-void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
+void send_json(detection * dets, int nboxes, int classes, char * * names,
+               long long int frame_id, int port, int timeout)
 {
     try {
-        char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
+        char * send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
         send_json_custom(send_buf, port, timeout);
         std::cout << " JSON-stream sent. \n";
 
         free(send_buf);
-    }
-    catch (...) {
+    } catch (...) {
         cerr << " Error in send_json() function \n";
     }
 }
@@ -336,11 +339,11 @@ class MJPG_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout usec.
-    int quality; // jpeg compression [1..100]
+    int timeout;  // master sock timeout, shutdown after timeout usec.
+    int quality;  // jpeg compression [1..100]
     int close_all_sockets;
 
-    int _write(int sock, char const * const s, int len)
+    ssize_t _write(int sock, char const * const s, size_t len)
     {
         if (len < 1) {
             len = strlen(s);
@@ -357,8 +360,9 @@ public:
     {
         close_all_sockets = 0;
         FD_ZERO(&master);
-        if (port)
+        if (port) {
             open(port);
+        }
     }
 
     ~MJPG_sender()
@@ -369,8 +373,9 @@ public:
 
     bool release()
     {
-        if (sock != INVALID_SOCKET)
+        if (sock != INVALID_SOCKET) {
             ::shutdown(sock, 2);
+        }
         sock = (INVALID_SOCKET);
         return false;
     }
@@ -389,10 +394,11 @@ public:
         SOCKADDR_IN address;
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_family = AF_INET;
-        address.sin_port = htons(port);    // ::htons(port);
+        address.sin_port = htons(port);  // ::htons(port);
         int reuse = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0)
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char const *)&reuse, sizeof(reuse)) < 0) {
             cerr << "setsockopt(SO_REUSEADDR) failed" << endl;
+        }
 
         // Non-blocking sockets
         // Windows: ioctlsocket() and FIONBIO
@@ -409,16 +415,15 @@ public:
 #endif // WIN32
 
 #ifdef SO_REUSEPORT
-        if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0)
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char const *)&reuse, sizeof(reuse)) < 0) {
             cerr << "setsockopt(SO_REUSEPORT) failed" << endl;
+        }
 #endif
-        if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
-        {
+        if (::bind(sock, (SOCKADDR*)&address, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
             cerr << "error MJPG_sender: couldn't bind sock " << sock << " to port " << port << "!" << endl;
             return release();
         }
-        if (::listen(sock, 10) == SOCKET_ERROR)
-        {
+        if (::listen(sock, 10) == SOCKET_ERROR) {
             cerr << "error MJPG_sender: couldn't listen on sock " << sock << " on port " << port << " !" << endl;
             return release();
         }
@@ -451,13 +456,11 @@ public:
         size_t outlen = outbuf.size();
 
 #ifdef _WIN32
-        for (unsigned i = 0; i<rread.fd_count; i++)
-        {
+        for (unsigned i = 0; i < rread.fd_count; i++) {
             int addrlen = sizeof(SOCKADDR);
             SOCKET s = rread.fd_array[i];    // fd_set on win is an array, while ...
 #else
-        for (int s = 0; s <= maxfd; s++)
-        {
+        for (int s = 0; s <= maxfd; s++) {
             socklen_t addrlen = sizeof(SOCKADDR);
             if (!FD_ISSET(s, &rread))      // ... on linux it's a bitmask ;)
                 continue;
@@ -503,10 +506,9 @@ public:
                 char head[400];
                 sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
                 _write(s, head, 0);
-                int n = _write(s, (char*)(&outbuf[0]), outlen);
+                ssize_t n = _write(s, (char *)&outbuf[0], outlen);
                 // cerr << "known client " << s << " " << n << endl;
-                if (n < outlen)
-                {
+                if (n < 0 || (size_t)n < outlen) {
                     cerr << "MJPG_sender: kill client " << s << endl;
                     ::shutdown(s, 2);
                     FD_CLR(s, &master);

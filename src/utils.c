@@ -193,7 +193,7 @@ char int_to_alphanum(int const i)
 
 void pm(int const M, int const N, float const * const A)
 {
-    for(int i = 0; i < M; ++i) {
+    for (int i = 0; i < M; ++i) {
         printf("%d ", i + 1);
         for (int j = 0; j < N; ++j) {
             printf("%2.4f, ", A[i * N + j]);
@@ -203,13 +203,14 @@ void pm(int const M, int const N, float const * const A)
     printf("\n");
 }
 
-void find_replace(const char* str, char* orig, char* rep, char* output)
+
+void find_replace(char const * str, char * orig, char * rep, char * output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
-    char *p;
+    char * buffer = calloc(8192, sizeof(char));
+    char * p;
 
     sprintf(buffer, "%s", str);
-    if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
+    if (!(p = strstr(buffer, orig))) {  // Is 'orig' even in 'str'?
         sprintf(output, "%s", buffer);
         free(buffer);
         return;
@@ -221,15 +222,18 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
     free(buffer);
 }
 
-void trim(char *str)
+
+void trim(char * str)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char * buffer = calloc(8192, sizeof(char));
     sprintf(buffer, "%s", str);
 
-    char *p = buffer;
-    while (*p == ' ' || *p == '\t') ++p;
+    char * p = buffer;
+    while (*p == ' ' || *p == '\t') {
+        ++p;
+    }
 
-    char *end = p + strlen(p) - 1;
+    char * end = p + strlen(p) - 1;
     while (*end == ' ' || *end == '\t') {
         *end = '\0';
         --end;
@@ -239,9 +243,10 @@ void trim(char *str)
     free(buffer);
 }
 
-void find_replace_extension(char *str, char *orig, char *rep, char *output)
+
+void find_replace_extension(char * str, char * orig, char * rep, char * output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char * buffer = calloc(8192, sizeof(char));
 
     sprintf(buffer, "%s", str);
     char *p = strstr(buffer, orig);
@@ -258,7 +263,8 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
     free(buffer);
 }
 
-void replace_image_to_label(const char* input_path, char* output_path)
+
+void replace_image_to_label(char const * input_path, char * output_path)
 {
     find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
     find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
@@ -288,22 +294,24 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".TIFF", ".txt", output_path);
 
     // Check file ends with txt:
-    if(strlen(output_path) > 4) {
-        char *output_path_ext = output_path + strlen(output_path) - 4;
-        if( strcmp(".txt", output_path_ext) != 0){
+    if (strlen(output_path) > 4) {
+        char * output_path_ext = output_path + strlen(output_path) - 4;
+        if (strcmp(".txt", output_path_ext) != 0) {
             fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
         }
-    }else{
+    } else {
         fprintf(stderr, "Label file name is too short: %s \n", output_path);
     }
 }
 
+
 float sec(clock_t clocks)
 {
-    return (float)clocks/CLOCKS_PER_SEC;
+    return (float)clocks / CLOCKS_PER_SEC;
 }
 
-void top_k(float *a, int n, int k, int *index)
+
+void top_k(float * a, int n, int k, int *index)
 {
     int i,j;
     for(j = 0; j < k; ++j) index[j] = -1;
@@ -319,7 +327,8 @@ void top_k(float *a, int n, int k, int *index)
     }
 }
 
-void error(const char *s)
+
+void error(char const * s)
 {
     perror(s);
     assert(0);
@@ -1051,7 +1060,7 @@ boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int b
 }
 
 
-int make_directory(char *path, int mode)
+int make_directory(char * path, int mode)
 {
 #ifdef WIN32
     return _mkdir(path);

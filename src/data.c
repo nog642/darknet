@@ -17,7 +17,7 @@ list * get_paths(char * filename)
 {
     char * path;
     FILE * file = fopen(filename, "r");
-    if (!file) {
+    if (file == NULL) {
         file_error(filename);
     }
     list * lines = make_list();
@@ -953,8 +953,12 @@ void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, in
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup,
-    float jitter, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
+                         int boxes, int classes, int use_flip, int use_blur,
+                         int use_mixup, float jitter, float hue,
+                         float saturation, float exposure, int mini_batch,
+                         int track, int augment_speed, int letter_box,
+                         int show_imgs)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -967,14 +971,15 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     if (random_gen() % 2 == 0) use_mixup = 0;
     int i;
 
-    int *cut_x = NULL, *cut_y = NULL;
+    int * cut_x = NULL;
+    int * cut_y = NULL;
     if (use_mixup == 3) {
-        cut_x = (int*)calloc(n, sizeof(int));
-        cut_y = (int*)calloc(n, sizeof(int));
-        const float min_offset = 0.2; // 20%
+        cut_x = calloc(n, sizeof(int));
+        cut_y = calloc(n, sizeof(int));
+        float const min_offset = 0.2;  // 20%
         for (i = 0; i < n; ++i) {
-            cut_x[i] = rand_int(w*min_offset, w*(1 - min_offset));
-            cut_y[i] = rand_int(h*min_offset, h*(1 - min_offset));
+            cut_x[i] = rand_int(w * min_offset, w * (1 - min_offset));
+            cut_y[i] = rand_int(h * min_offset, h * (1 - min_offset));
         }
     }
 
@@ -982,42 +987,55 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
-    d.X.cols = h*w*c;
+    d.X.vals = (float * *)calloc(d.X.rows, sizeof(float *));
+    d.X.cols = h * w * c;
 
-    float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale = 0;
-    float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
+    float r1 = 0.f;
+    float r2 = 0.f;
+    float r3 = 0.f;
+    float r4 = 0.f;
+    float r_scale = 0.f;
+    float dhue = 0.f;
+    float dsat = 0.f;
+    float dexp = 0.f;
+    float flip = 0.f;
+    float blur = 0.f;
     int augmentation_calculated = 0;
 
-    d.y = make_matrix(n, 5*boxes);
+    d.y = make_matrix(n, 5 * boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= use_mixup; i_mixup++) {
-        if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
+        if (i_mixup) {
+            augmentation_calculated = 0;  // recalculate augmentation for the 2nd sequence if(track==1)
+        }
 
-        char **random_paths;
-        if (track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-        else random_paths = get_random_paths(paths, n, m);
+        char * * random_paths;
+        if (track) {
+            random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
+        } else {
+            random_paths = get_random_paths(paths, n, m);
+        }
 
         for (i = 0; i < n; ++i) {
-            float *truth = (float*)calloc(5 * boxes, sizeof(float));
-            const char *filename = random_paths[i];
+            float * truth = calloc(5 * boxes, sizeof(float));
+            char const * filename = random_paths[i];
 
-            int flag = (c >= 3);
-            mat_cv *src;
-            src = load_image_mat_cv(filename, flag);
+            int flag = c >= 3;
+            mat_cv * src = load_image_mat_cv(filename, flag);
             if (src == NULL) {
-                if (check_mistakes) getchar();
+                if (check_mistakes) {
+                    getchar();
+                }
                 continue;
             }
 
             int oh = get_height_mat(src);
             int ow = get_width_mat(src);
 
-            int dw = (ow*jitter);
-            int dh = (oh*jitter);
+            int dw = ow * jitter;
+            int dh = oh * jitter;
 
-            if (!augmentation_calculated || !track)
-            {
+            if (!augmentation_calculated || !track) {
                 augmentation_calculated = 1;
                 r1 = random_float();
                 r2 = random_float();
@@ -1034,9 +1052,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 if (use_blur) {
                     int tmp_blur = rand_int(0, 2);  // 0 - disable, 1 - blur background, 2 - blur the whole image
-                    if (tmp_blur == 0) blur = 0;
-                    else if (tmp_blur == 1) blur = 1;
-                    else blur = use_blur;
+                    if (tmp_blur == 0) {
+                        blur = 0;
+                    } else if (tmp_blur == 1) {
+                        blur = 1;
+                    } else {
+                        blur = use_blur;
+                    }
                 }
             }
 
@@ -1046,7 +1068,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             int pbot = rand_precalc_random(-dh, dh, r4);
             //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
 
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+            // float scale = rand_precalc_random(.25, 2, r_scale);
+            rand_precalc_random(.25, 2, r_scale);
 
             if (letter_box)
             {
@@ -1084,21 +1107,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
-            if ((min_w_h / 8) < blur && blur > 1) blur = min_w_h / 8;   // disable blur if one of the objects is too small
+            if ((min_w_h / 8) < blur && blur > 1) {
+                blur = min_w_h / 8;  // disable blur if one of the objects is too small
+            }
 
-            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                blur, boxes, truth);
+            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
+                                               sheight, flip, dhue, dsat, dexp,
+                                               blur, boxes, truth);
 
             if (use_mixup == 0) {
                 d.X.vals[i] = ai.data;
                 memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
-            }
-            else if (use_mixup == 1) {
+            } else if (use_mixup == 1) {
                 if (i_mixup == 0) {
                     d.X.vals[i] = ai.data;
                     memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
-                }
-                else if (i_mixup == 1) {
+                } else if (i_mixup == 1) {
                     image old_img = make_empty_image(w, h, c);
                     old_img.data = d.X.vals[i];
                     // show_image(ai, "new");
@@ -1217,31 +1241,44 @@ data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
                          int track, int augment_speed, int letter_box,
                          int show_imgs)
 {
-    const int random_index = random_gen();
+    int const random_index = random_gen();
     c = c ? c : 3;
     char * * random_paths;
     char * * mixup_random_paths = NULL;
-    if(track) random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-    else random_paths = get_random_paths(paths, n, m);
+    if (track) {
+        random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
+    } else {
+        random_paths = get_random_paths(paths, n, m);
+    }
 
     assert(use_mixup < 2);
     int mixup = use_mixup ? random_gen() % 2 : 0;
     //printf("\n mixup = %d \n", mixup);
     if (mixup) {
-        if (track) mixup_random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
-        else mixup_random_paths = get_random_paths(paths, n, m);
+        if (track) {
+            mixup_random_paths = get_sequential_paths(paths, n, m, mini_batch, augment_speed);
+        } else {
+            mixup_random_paths = get_random_paths(paths, n, m);
+        }
     }
 
     int i;
-    data d = { 0 };
+    data d = {0};
     d.shallow = 0;
 
     d.X.rows = n;
-    d.X.vals = (float**)calloc(d.X.rows, sizeof(float*));
-    d.X.cols = h*w*c;
+    d.X.vals = (float * *)calloc(d.X.rows, sizeof(float *));
+    d.X.cols = h * w * c;
 
-    float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale;
-    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
+    float r1 = 0.f;
+    float r2 = 0.f;
+    float r3 = 0.f;
+    float r4 = 0.f;
+    float r_scale;
+    float dhue = 0.f;
+    float dsat = 0.f;
+    float dexp = 0.f;
+    float flip = 0.f;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5 * boxes);
@@ -1283,7 +1320,8 @@ data load_data_detection(int n, char * * paths, int m, int w, int h, int c,
             int ptop = rand_precalc_random(-dh, dh, r3);
             int pbot = rand_precalc_random(-dh, dh, r4);
 
-            float scale = rand_precalc_random(.25, 2, r_scale);  // unused currently
+            // float scale = rand_precalc_random(.25, 2, r_scale);
+            rand_precalc_random(.25, 2, r_scale);
 
             if (letter_box) {
                 float img_ar = (float)ow / (float)oh;

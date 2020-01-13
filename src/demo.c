@@ -93,7 +93,9 @@ void * detect_in_thread(void * ptr)
     demo_index = (demo_index + 1) % NFRAMES;
 
     if (letter_box) {
-        dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1);  // letter box
+        dets = get_network_boxes(&net, get_width_mat(in_img),
+                                 get_height_mat(in_img), demo_thresh,
+                                 demo_thresh, 0, 1, &nboxes, 1);  // letter box
     } else {
         dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0);  // resized
     }
@@ -202,7 +204,9 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
     if (out_filename && !flag_exit) {
         int src_fps = 25;
         src_fps = get_stream_fps_cpp_cv(cap);
-        output_video_writer = create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_mat(det_img),
+        output_video_writer = create_video_writer(out_filename, 'D', 'I', 'V',
+                                                  'X', src_fps,
+                                                  get_width_mat(det_img),
                                                   get_height_mat(det_img), 1);
 
         // 'H', '2', '6', '4'
@@ -261,7 +265,10 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
             if (http_post_host && !send_http_post_once) {
                 int timeout = 3;            // 3 seconds
                 int http_post_port = 80;    // 443 https, 80 http
-                if (send_http_post_request(http_post_host, http_post_port, filename, local_dets, nboxes, classes, names, frame_id, ext_output, timeout)) {
+                if (send_http_post_request(http_post_host, http_post_port,
+                                           filename, local_dets, nboxes,
+                                           classes, names, frame_id, ext_output,
+                                           timeout)) {
                     if (time_limit_sec > 0) {
                         send_http_post_once = 1;
                     }
@@ -323,7 +330,8 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
             }
 
             if (time_limit_sec > 0 && (get_time_point() - start_time_lim) / 1000000 > time_limit_sec) {
-                printf(" start_time_lim = %f, get_time_point() = %f, time spent = %f \n", start_time_lim, get_time_point(), get_time_point() - start_time_lim);
+                printf(" start_time_lim = %f, get_time_point() = %f, time spent = %f \n",
+                       start_time_lim, get_time_point(), get_time_point() - start_time_lim);
                 break;
             }
 

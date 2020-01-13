@@ -1206,16 +1206,16 @@ void gun_classifier(char* datacfg, char* cfgfile, char* weightfile, int cam_inde
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
-    list* options = read_data_cfg(datacfg);
+    list * options = read_data_cfg(datacfg);
 
     srand(2222222);
-    CvCapture* cap;
+    CvCapture * cap;
 
     if (filename) {
-        //cap = cvCaptureFromFile(filename);
+        // cap = cvCaptureFromFile(filename);
         cap = get_capture_video_stream(filename);
     } else {
-        //cap = cvCaptureFromCAM(cam_index);
+        // cap = cvCaptureFromCAM(cam_index);
         cap = get_capture_webcam(cam_index);
     }
 
@@ -1225,10 +1225,10 @@ void gun_classifier(char* datacfg, char* cfgfile, char* weightfile, int cam_inde
         top = classes;
     }
 
-    char* name_list = option_find_str(options, "names", 0);
-    char** names = get_labels(name_list);
+    char * name_list = option_find_str(options, "names", 0);
+    char * * names = get_labels(name_list);
 
-    int* indexes = (int*)calloc(top, sizeof(int));
+    int * indexes = calloc(top, sizeof(int));
 
     if (!cap) {
         error("Couldn't connect to webcam.\n");
@@ -1239,7 +1239,9 @@ void gun_classifier(char* datacfg, char* cfgfile, char* weightfile, int cam_inde
     int i;
 
     while (1) {
-        struct timeval tval_before, tval_after, tval_result;
+        struct timeval tval_before;
+        struct timeval tval_after;
+        struct timeval tval_result;
         gettimeofday(&tval_before, NULL);
 
         //image in = get_image_from_stream(cap);
@@ -1247,7 +1249,7 @@ void gun_classifier(char* datacfg, char* cfgfile, char* weightfile, int cam_inde
         image in_s = resize_image(in, net.w, net.h);
         show_image(in, "Threat Detection");
 
-        float* predictions = network_predict(net, in_s.data);
+        float * predictions = network_predict(net, in_s.data);
         top_predictions(net, top, indexes);
 
         printf("\033[2J");
@@ -1335,7 +1337,9 @@ void demo_classifier(char * datacfg, char * cfgfile, char * weightfile, int cam_
     int frame_counter = 0;
 
     while (1) {
-        struct timeval tval_before, tval_after, tval_result;
+        struct timeval tval_before;
+        // struct timeval tval_after;
+        // struct timeval tval_result;
         gettimeofday(&tval_before, NULL);
 
         //image in = get_image_from_stream(cap);

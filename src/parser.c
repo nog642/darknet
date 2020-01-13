@@ -426,23 +426,25 @@ softmax_layer parse_softmax(list* options, size_params params)
 }
 
 
-int* parse_yolo_mask(char* a, int* num)
+int * parse_yolo_mask(char const * a, int * const num)
 {
-    int* mask;
-    if (a) {
-        int len = strlen(a);
-        int n = 1;
-        for (int i = 0; i < len; ++i) {
-            if (a[i] == ',') ++n;
-        }
-        mask = (int*)calloc(n, sizeof(int));
-        for (int i = 0; i < n; ++i) {
-            int val = atoi(a);
-            mask[i] = val;
-            a = strchr(a, ',') + 1;
-        }
-        *num = n;
+    if (a == NULL) {
+        return NULL;
     }
+    size_t len = strlen(a);
+    unsigned int n = 1;
+    for (size_t i = 0; i < len; ++i) {
+        if (a[i] == ',') {
+            ++n;
+        }
+    }
+    int * mask = calloc(n, sizeof(int));
+    for (size_t i = 0; i < n; ++i) {
+        int val = atoi(a);
+        mask[i] = val;
+        a = strchr(a, ',') + 1;
+    }
+    *num = n;
     return mask;
 }
 
@@ -551,23 +553,25 @@ layer parse_yolo(list * options, size_params params)
 }
 
 
-int* parse_gaussian_yolo_mask(char* a, int* num)  // Gaussian_YOLOv3
+int* parse_gaussian_yolo_mask(char const * a, int * const num)  // Gaussian_YOLOv3
 {
-    int* mask;
-    if (a) {
-        int len = strlen(a);
-        int n = 1;
-        for (int i = 0; i < len; ++i) {
-            if (a[i] == ',') ++n;
-        }
-        mask = (int*)calloc(n, sizeof(int));
-        for (int i = 0; i < n; ++i) {
-            int val = atoi(a);
-            mask[i] = val;
-            a = strchr(a, ',') + 1;
-        }
-        *num = n;
+    if (a == NULL) {
+        return NULL;
     }
+    size_t len = strlen(a);
+    unsigned int n = 1;
+    for (size_t i = 0; i < len; ++i) {
+        if (a[i] == ',') {
+            ++n;
+        }
+    }
+    int * mask = calloc(n, sizeof(int));
+    for (size_t i = 0; i < n; ++i) {
+        int val = atoi(a);
+        mask[i] = val;
+        a = strchr(a, ',') + 1;
+    }
+    *num = n;
     return mask;
 }
 

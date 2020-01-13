@@ -655,7 +655,7 @@ typedef enum {
 
 // network.h
 typedef struct network {
-    int n;
+    size_t n;
     int batch;
     uint64_t * seen;
     int * t;
