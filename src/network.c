@@ -875,8 +875,9 @@ void fill_network_boxes(network * net, int w, int h, float thresh, float hier, i
 }
 
 
-detection* get_network_boxes(network * net, int w, int h, float thresh, float hier, int * map, int relative, int * num,
-                             int letter)
+detection * get_network_boxes(network * net, int w, int h, float thresh,
+                              float hier, int * map, int relative, int * num,
+                              int letter)
 {
     detection * dets = make_network_boxes(net, thresh, num);
     fill_network_boxes(net, w, h, thresh, hier, map, relative, dets, letter);

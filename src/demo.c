@@ -95,9 +95,10 @@ void * detect_in_thread(void * ptr)
     if (letter_box) {
         dets = get_network_boxes(&net, get_width_mat(in_img),
                                  get_height_mat(in_img), demo_thresh,
-                                 demo_thresh, 0, 1, &nboxes, 1);  // letter box
+                                 demo_thresh, NULL, 1, &nboxes, 1);  // letter box
     } else {
-        dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0);  // resized
+        dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh,
+                                 NULL, 1, &nboxes, 0);  // resized
     }
 
     return NULL;
@@ -340,7 +341,9 @@ void demo(char * const cfgfile, char * const weightfile, float const thresh, flo
             }
 
             if (delay == 0) {
-                if(!benchmark) release_mat(&show_img);
+                if (!benchmark) {
+                    release_mat(&show_img);
+                }
                 show_img = det_img;
             }
             det_img = in_img;

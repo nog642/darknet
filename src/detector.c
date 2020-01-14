@@ -1481,16 +1481,18 @@ void calc_anchors(char * datacfg, int num_of_clusters, int width, int height, in
 }
 
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile, int letter_box, int benchmark_layers)
+void test_detector(char * datacfg, char * cfgfile, char * weightfile,
+                   char * filename, float thresh, float hier_thresh,
+                   int dont_show, int ext_output, int save_labels,
+                   char * outfile, int letter_box, int benchmark_layers)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     int names_size = 0;
-    char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
+    char * * names = get_labels_custom(name_list, &names_size);  //get_labels(name_list);
 
-    image **alphabet = load_alphabet();
-    network net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+    image * * alphabet = load_alphabet();
+    network net = parse_network_cfg_custom(cfgfile, 1, 1);  // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -1635,13 +1637,17 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_network(net);
 }
 
-void run_detector(int argc, char **argv)
+void run_detector(int argc, char * * argv)
 {
     int dont_show = find_arg(argc, argv, "-dont_show");
     int benchmark = find_arg(argc, argv, "-benchmark");
     int benchmark_layers = find_arg(argc, argv, "-benchmark_layers");
-    if (benchmark_layers) benchmark = 1;
-    if (benchmark) dont_show = 1;
+    if (benchmark_layers) {
+        benchmark = 1;
+    }
+    if (benchmark) {
+        dont_show = 1;
+    }
     int show = find_arg(argc, argv, "-show");
     int letter_box = find_arg(argc, argv, "-letter_box");
     int calc_map = find_arg(argc, argv, "-map");
@@ -1650,11 +1656,11 @@ void run_detector(int argc, char **argv)
     int show_imgs = find_arg(argc, argv, "-show_imgs");
     int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
     int json_port = find_int_arg(argc, argv, "-json_port", -1);
-    char *http_post_host = find_char_arg(argc, argv, "-http_post_host", 0);
+    char * http_post_host = find_char_arg(argc, argv, "-http_post_host", NULL);
     int time_limit_sec = find_int_arg(argc, argv, "-time_limit_sec", 0);
-    char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
-    char *outfile = find_char_arg(argc, argv, "-out", 0);
-    char *prefix = find_char_arg(argc, argv, "-prefix", 0);
+    char * out_filename = find_char_arg(argc, argv, "-out_filename", NULL);
+    char * outfile = find_char_arg(argc, argv, "-out", NULL);
+    char * prefix = find_char_arg(argc, argv, "-prefix", NULL);
     float thresh = find_float_arg(argc, argv, "-thresh", .25);    // 0.24
     float iou_thresh = find_float_arg(argc, argv, "-iou_thresh", .5);    // 0.5 for mAP
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
@@ -1671,25 +1677,25 @@ void run_detector(int argc, char **argv)
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
-    char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
-    int *gpus = 0;
+    char * gpu_list = find_char_arg(argc, argv, "-gpus", NULL);
+    int * gpus = 0;
     int gpu = 0;
     int ngpus = 0;
     if (gpu_list) {
         printf("%s\n", gpu_list);
         int len = strlen(gpu_list);
         ngpus = 1;
-        int i;
-        for (i = 0; i < len; ++i) {
-            if (gpu_list[i] == ',') ++ngpus;
+        for (int i = 0; i < len; ++i) {
+            if (gpu_list[i] == ',') {
+                ++ngpus;
+            }
         }
         gpus = (int*)calloc(ngpus, sizeof(int));
-        for (i = 0; i < ngpus; ++i) {
+        for (int i = 0; i < ngpus; ++i) {
             gpus[i] = atoi(gpu_list);
             gpu_list = strchr(gpu_list, ',') + 1;
         }
-    }
-    else {
+    } else {
         gpu = gpu_index;
         gpus = &gpu;
         ngpus = 1;
@@ -1697,34 +1703,51 @@ void run_detector(int argc, char **argv)
 
     int clear = find_arg(argc, argv, "-clear");
 
-    char *datacfg = argv[3];
-    char *cfg = argv[4];
-    char *weights = (argc > 5) ? argv[5] : 0;
-    if (weights)
-        if (strlen(weights) > 0)
-            if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
-    char *filename = (argc > 6) ? argv[6] : 0;
-    if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile, letter_box, benchmark_layers);
-    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port, show_imgs, benchmark_layers);
-    else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
-    else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
-    else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);
-    else if (0 == strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, height, show);
-    else if (0 == strcmp(argv[2], "demo")) {
-        list *options = read_data_cfg(datacfg);
+    char * datacfg = argv[3];
+    char * cfg = argv[4];
+    char * weights = (argc > 5) ? argv[5] : 0;
+    if (weights) {
+        if (strlen(weights) > 0) {
+            if (weights[strlen(weights) - 1] == 0x0d) {
+                weights[strlen(weights) - 1] = 0;
+            }
+        }
+    }
+    char * filename = (argc > 6) ? argv[6] : 0;
+    if (0 == strcmp(argv[2], "test")) {
+        test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile, letter_box, benchmark_layers);
+    } else if (0 == strcmp(argv[2], "train")) {
+        train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port, show_imgs, benchmark_layers);
+    } else if (0 == strcmp(argv[2], "valid")) {
+        validate_detector(datacfg, cfg, weights, outfile);
+    } else if (0 == strcmp(argv[2], "recall")) {
+        validate_detector_recall(datacfg, cfg, weights);
+    } else if (0 == strcmp(argv[2], "map")) {
+        validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);
+    } else if (0 == strcmp(argv[2], "calc_anchors")) {
+        calc_anchors(datacfg, num_of_clusters, width, height, show);
+    } else if (0 == strcmp(argv[2], "demo")) {
+        list * options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
-        char *name_list = option_find_str(options, "names", "data/names.list");
-        char **names = get_labels(name_list);
-        if (filename)
-            if (strlen(filename) > 0)
-                if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-            mjpeg_port, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers);
+        char * name_list = option_find_str(options, "names", "data/names.list");
+        char * * names = get_labels(name_list);
+        if (filename) {
+            if (strlen(filename) > 0) {
+                if (filename[strlen(filename) - 1] == 0x0d) {
+                    filename[strlen(filename) - 1] = 0;
+                }
+            }
+        }
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names,
+             classes, frame_skip, prefix, out_filename, mjpeg_port, json_port,
+             dont_show, ext_output, letter_box, time_limit_sec, http_post_host,
+             benchmark, benchmark_layers);
 
         free_list_contents_kvp(options);
         free_list(options);
+    } else {
+        printf(" There isn't such command: %s", argv[2]);
     }
-    else printf(" There isn't such command: %s", argv[2]);
 
     if (gpus && gpu_list && ngpus > 1) free(gpus);
 }

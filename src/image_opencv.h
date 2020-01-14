@@ -11,9 +11,9 @@ extern "C" {
 #ifdef OPENCV
 
 // declaration
-typedef void* mat_cv;
-typedef void* cap_cv;
-typedef void* write_cv;
+typedef void * mat_cv;
+typedef void * cap_cv;
+typedef void * write_cv;
 
 //typedef struct mat_cv mat_cv;
 //typedef struct cap_cv cap_cv;
@@ -43,15 +43,17 @@ void release_mat(mat_cv **mat);
 // IplImage *mat_to_ipl(cv::Mat mat)
 // Mat image_to_mat(image img)
 // image mat_to_image(cv::Mat mat)
-image mat_to_image_cv(mat_cv *mat);
+mat_cv image_to_mat_cv(image img);
+image mat_to_image_cv(mat_cv * mat);
 
 // Window
-void create_window_cv(char const* window_name, int full_screen, int width, int height);
+void create_window_cv(char const * window_name, int full_screen, int width,
+                      int height);
 void destroy_all_windows_cv();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
-void make_window(char *name, int w, int h, int fullscreen);
-void show_image_cv(image p, const char *name);
+void make_window(char * name, int w, int h, int fullscreen);
+void show_image_cv(image p, const char * name);
 //void show_image_cv_ipl(mat_cv *disp, const char *name);
 void show_image_mat(mat_cv *mat_ptr, const char *name);
 
