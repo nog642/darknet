@@ -136,7 +136,7 @@ mat_cv * load_image_mat_cv(char const * filename, int flag)
 }
 
 
-cv::Mat load_image_mat(char * filename, int channels)
+cv::Mat load_image_mat(char const * const filename, int channels)
 {
     int flag = cv::IMREAD_UNCHANGED;
     if (channels == 0) {
@@ -162,7 +162,7 @@ cv::Mat load_image_mat(char * filename, int channels)
 }
 
 
-image load_image_cv(char * filename, int channels)
+image load_image_cv(char const * const filename, int channels)
 {
     cv::Mat mat = load_image_mat(filename, channels);
 
