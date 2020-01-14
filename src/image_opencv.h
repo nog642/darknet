@@ -15,9 +15,9 @@ typedef void * mat_cv;
 typedef void * cap_cv;
 typedef void * write_cv;
 
-//typedef struct mat_cv mat_cv;
-//typedef struct cap_cv cap_cv;
-//typedef struct write_cv write_cv;
+// typedef struct mat_cv mat_cv;
+// typedef struct cap_cv cap_cv;
+// typedef struct write_cv write_cv;
 
 // cv::Mat
 mat_cv * load_image_mat_cv(char const * filename, int flag);
@@ -28,13 +28,13 @@ int get_height_mat(mat_cv * mat);
 void release_mat(mat_cv * * mat);
 
 // IplImage - to delete
-//int get_width_cv(mat_cv *ipl);
-//int get_height_cv(mat_cv *ipl);
-//void release_ipl(mat_cv **ipl);
+// int get_width_cv(mat_cv * ipl);
+// int get_height_cv(mat_cv * ipl);
+// void release_ipl(mat_cv * * ipl);
 
 // image-to-ipl, ipl-to-image, image_to_mat, mat_to_image
-//mat_cv *image_to_ipl(image im);           // to delete
-//image ipl_to_image(mat_cv* src_ptr);    // to delete
+// mat_cv *image_to_ipl(image im);  // to delete
+// image ipl_to_image(mat_cv* src_ptr);  // to delete
 
 
 // mat_cv *image_to_ipl(image im)
@@ -65,10 +65,10 @@ void write_frame_cv(write_cv * output_video_writer, mat_cv * mat);
 void release_video_writer(write_cv * * output_video_writer);
 
 
-//void *open_video_stream(const char *f, int c, int w, int h, int fps);
-//image get_image_from_stream(void *p);
-//image load_image_cv(char *filename, int channels);
-//int show_image_cv(image im, const char* name, int ms);
+//void * open_video_stream(const char * f, int c, int w, int h, int fps);
+//image get_image_from_stream(void * p);
+//image load_image_cv(char * filename, int channels);
+//int show_image_cv(image im, const char * name, int ms);
 
 // Video Capture
 cap_cv * get_capture_video_stream(char const * path);
@@ -84,8 +84,10 @@ int set_capture_position_frame_cv(cap_cv * cap, int index);
 
 // ... Video Capture
 image get_image_from_stream_cpp(cap_cv * cap);
-image get_image_from_stream_resize(cap_cv * cap, int w, int h, int c, mat_cv * * in_img, int dont_close);
-image get_image_from_stream_letterbox(cap_cv * cap, int w, int h, int c, mat_cv * * in_img, int dont_close);
+image get_image_from_stream_resize(cap_cv * cap, int w, int h, int c,
+                                   mat_cv * * in_img, int dont_close);
+image get_image_from_stream_letterbox(cap_cv * cap, int w, int h, int c,
+                                      mat_cv * * in_img, int dont_close);
 
 
 // Image Saving
@@ -99,15 +101,19 @@ void draw_detections_cv_v3(mat_cv * show_img, detection * dets, int num,
                            int ext_output);
 
 // Draw Loss & Accuracy chart
-mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
-void draw_train_loss(char *windows_name, mat_cv* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
+mat_cv * draw_train_chart(char * windows_name, float max_img_loss,
+                          int max_batches, int number_of_lines, int img_size,
+                          int dont_show);
+void draw_train_loss(char * windows_name, mat_cv * img, int img_size,
+                     float avg_loss, float max_img_loss, int current_batch,
+                     int max_batches, float precision, int draw_precision,
+                     char * accuracy_name, int dont_show, int mjpeg_port);
 
 // Data augmentation
-image image_data_augmentation(mat_cv* mat, int w, int h,
-    int pleft, int ptop, int swidth, int sheight, int flip,
-    float dhue, float dsat, float dexp,
-    int blur, int num_boxes, float *truth);
+image image_data_augmentation(mat_cv * mat, int w, int h, int pleft, int ptop,
+                              int swidth, int sheight, int flip, float dhue,
+                              float dsat, float dexp, int blur, int num_boxes,
+                              float * truth);
 
 // blend two images with (alpha and beta)
 void blend_images_cv(image new_img, float alpha, image old_img, float beta);
@@ -116,7 +122,9 @@ void blend_images_cv(image new_img, float alpha, image old_img, float beta);
 image blur_image(image src_img, int ksize);
 
 // Show Anchors
-void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height);
+void show_acnhors(int number_of_boxes, int num_of_clusters,
+                  float * rel_width_height_array, model anchors_data, int width,
+                  int height);
 
 void show_opencv_info();
 

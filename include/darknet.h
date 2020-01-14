@@ -103,8 +103,8 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH,
-    NORM_CHAN, NORM_CHAN_SOFTMAX
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR,
+    HARDTAN, LHTAN, SELU, SWISH, MISH, NORM_CHAN, NORM_CHAN_SOFTMAX
 } ACTIVATION;
 
 
@@ -868,8 +868,9 @@ typedef struct data {
 
 // data.h
 typedef enum {
-    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA,
-    TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA,
+    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA,
+    COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA,
+    STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA,
     SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
 } data_type;
 
@@ -959,13 +960,15 @@ LIB_API void free_network(network net);
 // box.h
 LIB_API void do_nms_sort(detection * dets, int total, int classes, float thresh);
 LIB_API void do_nms_obj(detection * dets, int total, int classes, float thresh);
-LIB_API void diounms_sort(detection * dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1);
+LIB_API void diounms_sort(detection * dets, int total, int classes,
+                          float thresh, NMS_KIND nms_kind, float beta1);
 
 
 // network.h
 LIB_API float * network_predict(network net, float * input);
 LIB_API float * network_predict_ptr(network * net, float * input);
-LIB_API detection * get_network_boxes(network * net, int w, int h, float thresh, float hier, int * map, int relative,
+LIB_API detection * get_network_boxes(network * net, int w, int h, float thresh,
+                                      float hier, int * map, int relative,
                                       int * num, int letter);
 LIB_API void free_detections(detection * dets, int n);
 LIB_API void fuse_conv_batchnorm(network net);

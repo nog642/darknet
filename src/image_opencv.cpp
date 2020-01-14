@@ -91,10 +91,10 @@ extern "C" {
 // ====================================================================
 image mat_to_image(cv::Mat mat);
 cv::Mat * image_to_mat(image img);
-// image ipl_to_image(mat_cv* src);
-// mat_cv *image_to_ipl(image img);
-// cv::Mat ipl_to_mat(IplImage *ipl);
-// IplImage *mat_to_ipl(cv::Mat mat);
+// image ipl_to_image(mat_cv * src);
+// mat_cv * image_to_ipl(image img);
+// cv::Mat ipl_to_mat(IplImage * ipl);
+// IplImage * mat_to_ipl(cv::Mat mat);
 
 
 mat_cv * load_image_mat_cv(char const * filename, int flag)
@@ -173,7 +173,7 @@ image load_image_cv(char * filename, int channels)
 }
 
 
-image load_image_resize(char *filename, int w, int h, int c, image * im)
+image load_image_resize(char * filename, int w, int h, int c, image * im)
 {
     image out;
     try {
@@ -231,38 +231,39 @@ void release_mat(mat_cv * * mat)
 // IplImage
 // ====================================================================
 /*
-int get_width_cv(mat_cv *ipl_src)
+int get_width_cv(mat_cv * ipl_src)
 {
-    IplImage *ipl = (IplImage *)ipl_src;
+    IplImage * ipl = (IplImage *)ipl_src;
     return ipl->width;
 }
 
 
-int get_height_cv(mat_cv *ipl_src)
+int get_height_cv(mat_cv * ipl_src)
 {
-    IplImage *ipl = (IplImage *)ipl_src;
+    IplImage * ipl = (IplImage *)ipl_src;
     return ipl->height;
 }
 
 
-void release_ipl(mat_cv **ipl)
+void release_ipl(mat_cv * * ipl)
 {
-    IplImage **ipl_img = (IplImage **)ipl;
-    if (*ipl_img) cvReleaseImage(ipl_img);
+    IplImage * * ipl_img = (IplImage * *)ipl;
+    if (*ipl_img) {
+        cvReleaseImage(ipl_img);
+    }
     *ipl_img = NULL;
 }
 
 
 mat_cv * image_to_ipl(image im)
 {
-    int x, y, c;
-    IplImage *disp = cvCreateImage(cvSize(im.w, im.h), IPL_DEPTH_8U, im.c);
+    IplImage * disp = cvCreateImage(cvSize(im.w, im.h), IPL_DEPTH_8U, im.c);
     int step = disp->widthStep;
-    for (y = 0; y < im.h; ++y) {
-        for (x = 0; x < im.w; ++x) {
-            for (c = 0; c < im.c; ++c) {
-                float val = im.data[c*im.h*im.w + y*im.w + x];
-                disp->imageData[y*step + x*im.c + c] = (unsigned char)(val * 255);
+    for (int y = 0; y < im.h; ++y) {
+        for (int x = 0; x < im.w; ++x) {
+            for (int c = 0; c < im.c; ++c) {
+                float val = im.data[c * im.h * im.w + y * im.w + x];
+                disp->imageData[y * step + x * im.c + c] = (unsigned char)(val * 255);
             }
         }
     }
@@ -270,21 +271,21 @@ mat_cv * image_to_ipl(image im)
 }
 
 
-image ipl_to_image(mat_cv* src_ptr)
+image ipl_to_image(mat_cv * src_ptr)
 {
-    IplImage* src = (IplImage*)src_ptr;
+    IplImage * src = (IplImage *)src_ptr;
     int h = src->height;
     int w = src->width;
     int c = src->nChannels;
     image im = make_image(w, h, c);
-    unsigned char *data = (unsigned char *)src->imageData;
+    unsigned char * data = (unsigned char *)src->imageData;
     int step = src->widthStep;
     int i, j, k;
 
     for (i = 0; i < h; ++i) {
         for (k = 0; k < c; ++k) {
             for (j = 0; j < w; ++j) {
-                im.data[k*w*h + i*w + j] = data[i*step + j*c + k] / 255.;
+                im.data[k * w * h + i * w + j] = data[i * step + j * c + k] / 255.;
             }
         }
     }
@@ -292,16 +293,16 @@ image ipl_to_image(mat_cv* src_ptr)
 }
 
 
-cv::Mat ipl_to_mat(IplImage *ipl)
+cv::Mat ipl_to_mat(IplImage * ipl)
 {
     Mat m = cvarrToMat(ipl, true);
     return m;
 }
 
 
-IplImage *mat_to_ipl(cv::Mat mat)
+IplImage * mat_to_ipl(cv::Mat mat)
 {
-    IplImage *ipl = new IplImage;
+    IplImage * ipl = new IplImage;
     *ipl = mat;
     return ipl;
 }
@@ -346,7 +347,7 @@ image mat_to_image(cv::Mat mat)
             for (int x = 0; x < w; ++x) {
                 // uint8_t val = mat.ptr<uint8_t>(y)[c * x + k];
                 // uint8_t val = mat.at<Vec3b>(y, x).val[k];
-                // im.data[k*w*h + y*w + x] = val / 255.0f;
+                // im.data[k * w * h + y * w + x] = val / 255.0f;
 
                 im.data[k * w * h + y * w + x] = data[y * step + x * c + k] / 255.f;
             }
@@ -465,7 +466,7 @@ void show_image_cv(image p, char const * name)
 }
 
 
-// void show_image_cv_ipl(mat_cv *disp, const char *name)
+// void show_image_cv_ipl(mat_cv * disp, const char * name)
 // {
 //     if (disp == NULL) return;
 //     char buff[256];
@@ -475,7 +476,7 @@ void show_image_cv(image p, char const * name)
 // }
 
 
-void show_image_mat(mat_cv *mat_ptr, const char *name)
+void show_image_mat(mat_cv * mat_ptr, char const * name)
 {
     try {
         if (mat_ptr == NULL) {
@@ -548,7 +549,7 @@ void release_video_writer(write_cv * * output_video_writer)
 
 // void * open_video_stream(char const * f, int c, int w, int h, int fps)
 // {
-//     VideoCapture *cap;
+//     VideoCapture * cap;
 //     if (f) {
 //         cap = new VideoCapture(f);
 //     } else {
@@ -624,7 +625,7 @@ cap_cv * get_capture_webcam(int index)
 }
 
 
-void release_capture(cap_cv* cap)
+void release_capture(cap_cv * cap)
 {
     try {
         cv::VideoCapture * cpp_cap = (cv::VideoCapture *)cap;
@@ -635,7 +636,7 @@ void release_capture(cap_cv* cap)
 }
 
 
-mat_cv * get_capture_frame_cv(cap_cv *cap) {
+mat_cv * get_capture_frame_cv(cap_cv * cap) {
     cv::Mat * mat = NULL;
     try {
         mat = new cv::Mat();
@@ -826,8 +827,8 @@ image get_image_from_stream_resize(cap_cv * cap, int w, int h, int c,
     if (c>1) cv::cvtColor(new_img, new_img, cv::COLOR_RGB2BGR);
     image im = mat_to_image(new_img);
 
-    //show_image_cv(im, "im");
-    //show_image_mat(*in_img, "in_img");
+    // show_image_cv(im, "im");
+    // show_image_mat(*in_img, "in_img");
     return im;
 }
 
@@ -855,7 +856,7 @@ image get_image_from_stream_letterbox(cap_cv * cap, int w, int h, int c,
     }
 
     if (!wait_for_stream(cap, src, dont_close)) {
-        return make_empty_image(0, 0, 0);  // passes (cv::Mat *)src while should be (cv::Mat **)src
+        return make_empty_image(0, 0, 0);  // passes (cv::Mat *)src while should be (cv::Mat * *)src
     }
 
     *in_img = (mat_cv *)new cv::Mat(src->rows, src->cols, CV_8UC(c));
@@ -994,10 +995,10 @@ void draw_detections_cv_v3(mat_cv * mat, detection * dets, int num,
                 b.y = (b.y < 1) ? b.y : 1;
                 // printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
-                int left = (b.x - b.w / 2.)*show_img->cols;
-                int right = (b.x + b.w / 2.)*show_img->cols;
-                int top = (b.y - b.h / 2.)*show_img->rows;
-                int bot = (b.y + b.h / 2.)*show_img->rows;
+                int left = (b.x - b.w / 2.) * show_img->cols;
+                int right = (b.x + b.w / 2.) * show_img->cols;
+                int top = (b.y - b.h / 2.) * show_img->rows;
+                int bot = (b.y + b.h / 2.) * show_img->rows;
 
                 if (left < 0) {
                     left = 0;
@@ -1041,7 +1042,7 @@ void draw_detections_cv_v3(mat_cv * mat, detection * dets, int num,
 
                 // you should create directory: result_img
                 // static int copied_frame_id = -1;
-                // static IplImage* copy_img = NULL;
+                // static IplImage * copy_img = NULL;
                 // if (copied_frame_id != frame_id) {
                 //     copied_frame_id = frame_id;
                 //     if(copy_img == NULL) copy_img = cvCreateImage(cvSize(show_img->width, show_img->height), show_img->depth, show_img->nChannels);
@@ -1102,7 +1103,7 @@ mat_cv * draw_train_chart(char * windows_name, float max_img_loss,
             pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
             cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
             if (i % 10 == 0) {
-                sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
+                sprintf(char_buff, "%2.1f", max_img_loss * (number_of_lines - i) / number_of_lines);
                 pt_text.y = pt1.y + 3;
 
                 cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
