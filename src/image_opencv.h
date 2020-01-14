@@ -20,12 +20,12 @@ typedef void * write_cv;
 //typedef struct write_cv write_cv;
 
 // cv::Mat
-mat_cv *load_image_mat_cv(const char *filename, int flag);
-image load_image_cv(char *filename, int channels);
-image load_image_resize(char *filename, int w, int h, int c, image *im);
-int get_width_mat(mat_cv *mat);
-int get_height_mat(mat_cv *mat);
-void release_mat(mat_cv **mat);
+mat_cv * load_image_mat_cv(char const * filename, int flag);
+image load_image_cv(char * filename, int channels);
+image load_image_resize(char * filename, int w, int h, int c, image * im);
+int get_width_mat(mat_cv * mat);
+int get_height_mat(mat_cv * mat);
+void release_mat(mat_cv * * mat);
 
 // IplImage - to delete
 //int get_width_cv(mat_cv *ipl);
@@ -43,7 +43,7 @@ void release_mat(mat_cv **mat);
 // IplImage *mat_to_ipl(cv::Mat mat)
 // Mat image_to_mat(image img)
 // image mat_to_image(cv::Mat mat)
-mat_cv image_to_mat_cv(image img);
+mat_cv * image_to_mat_cv(image img);
 image mat_to_image_cv(mat_cv * mat);
 
 // Window
@@ -53,14 +53,16 @@ void destroy_all_windows_cv();
 int wait_key_cv(int delay);
 int wait_until_press_key_cv();
 void make_window(char * name, int w, int h, int fullscreen);
-void show_image_cv(image p, const char * name);
+void show_image_cv(image p, char const * name);
 //void show_image_cv_ipl(mat_cv *disp, const char *name);
-void show_image_mat(mat_cv *mat_ptr, const char *name);
+void show_image_mat(mat_cv *mat_ptr, char const * name);
 
 // Video Writer
-write_cv *create_video_writer(char *out_filename, char c1, char c2, char c3, char c4, int fps, int width, int height, int is_color);
-void write_frame_cv(write_cv *output_video_writer, mat_cv *mat);
-void release_video_writer(write_cv **output_video_writer);
+write_cv * create_video_writer(char * out_filename, char c1, char c2, char c3,
+                              char c4, int fps, int width, int height,
+                              int is_color);
+void write_frame_cv(write_cv * output_video_writer, mat_cv * mat);
+void release_video_writer(write_cv * * output_video_writer);
 
 
 //void *open_video_stream(const char *f, int c, int w, int h, int fps);
@@ -69,26 +71,26 @@ void release_video_writer(write_cv **output_video_writer);
 //int show_image_cv(image im, const char* name, int ms);
 
 // Video Capture
-cap_cv* get_capture_video_stream(const char *path);
-cap_cv* get_capture_webcam(int index);
-void release_capture(cap_cv* cap);
+cap_cv * get_capture_video_stream(char const * path);
+cap_cv * get_capture_webcam(int index);
+void release_capture(cap_cv * cap);
 
-mat_cv* get_capture_frame_cv(cap_cv *cap);
-int get_stream_fps_cpp_cv(cap_cv *cap);
-double get_capture_property_cv(cap_cv *cap, int property_id);
-double get_capture_frame_count_cv(cap_cv *cap);
-int set_capture_property_cv(cap_cv *cap, int property_id, double value);
-int set_capture_position_frame_cv(cap_cv *cap, int index);
+mat_cv * get_capture_frame_cv(cap_cv * cap);
+int get_stream_fps_cpp_cv(cap_cv * cap);
+double get_capture_property_cv(cap_cv * cap, int property_id);
+double get_capture_frame_count_cv(cap_cv * cap);
+int set_capture_property_cv(cap_cv * cap, int property_id, double value);
+int set_capture_position_frame_cv(cap_cv * cap, int index);
 
 // ... Video Capture
-image get_image_from_stream_cpp(cap_cv *cap);
-image get_image_from_stream_resize(cap_cv *cap, int w, int h, int c, mat_cv** in_img, int dont_close);
-image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int c, mat_cv** in_img, int dont_close);
+image get_image_from_stream_cpp(cap_cv * cap);
+image get_image_from_stream_resize(cap_cv * cap, int w, int h, int c, mat_cv * * in_img, int dont_close);
+image get_image_from_stream_letterbox(cap_cv * cap, int w, int h, int c, mat_cv * * in_img, int dont_close);
 
 
 // Image Saving
-void save_cv_png(mat_cv *img, const char *name);
-void save_cv_jpg(mat_cv *img, const char *name);
+void save_cv_png(mat_cv * img, const char * name);
+void save_cv_jpg(mat_cv * img, const char * name);
 
 // Draw Detection
 void draw_detections_cv_v3(mat_cv * show_img, detection * dets, int num,
