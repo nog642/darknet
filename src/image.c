@@ -167,10 +167,11 @@ image get_label_v3(image * * characters, char * string, int size)
 }
 
 
-void draw_label(image a, int r, int c, image label, float const * rgb)
+void draw_label(image const a, int r, int const c, image const label,
+                float const * const rgb)
 {
-    int w = label.w;
-    int h = label.h;
+    int const w = label.w;
+    int const h = label.h;
     if (r - h >= 0) {
         r -= h;
     }
@@ -178,7 +179,7 @@ void draw_label(image a, int r, int c, image label, float const * rgb)
     for (int j = 0; j < h && j + r < a.h; ++j) {
         for (int i = 0; i < w && i + c < a.w; ++i) {
             for (int k = 0; k < label.c; ++k) {
-                float val = get_pixel(label, i, j, k);
+                float const val = get_pixel(label, i, j, k);
                 set_pixel(a, i + c, j + r, k, rgb[k] * val);
             }
         }
@@ -188,7 +189,7 @@ void draw_label(image a, int r, int c, image label, float const * rgb)
 
 void draw_box_bw(image a, int x1, int y1, int x2, int y2, float brightness)
 {
-    //normalize_image(a);
+    // normalize_image(a);
     if (x1 < 0) {
         x1 = 0;
     }

@@ -13,7 +13,7 @@
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-list * get_paths(char * filename)
+list * get_paths(char const * const filename)
 {
     char * path;
     FILE * file = fopen(filename, "r");
@@ -154,19 +154,25 @@ matrix load_image_paths(char * * paths, int n, int w, int h)
     return X;
 }
 
-matrix load_image_augment_paths(char **paths, int n, int use_flip, int min, int max, int w, int h, float angle, float aspect, float hue, float saturation, float exposure, int dontuse_opencv)
+matrix load_image_augment_paths(char * * paths, int n, int use_flip, int min,
+                                int max, int w, int h, float angle,
+                                float aspect, float hue, float saturation,
+                                float exposure, int dontuse_opencv)
 {
     int i;
     matrix X;
     X.rows = n;
-    X.vals = (float**)calloc(X.rows, sizeof(float*));
+    X.vals = (float * *)calloc(X.rows, sizeof(float *));
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
         int size = w > h ? w : h;
         image im;
-        if(dontuse_opencv) im = load_image_stb_resize(paths[i], 0, 0, 3);
-        else im = load_image_color(paths[i], 0, 0);
+        if (dontuse_opencv) {
+            im = load_image_stb_resize(paths[i], 0, 0, 3);
+        } else {
+            im = load_image_color(paths[i], 0, 0);
+        }
 
         image crop = random_augment_image(im, angle, aspect, min, max, size);
         int flip = use_flip ? random_gen() % 2 : 0;
@@ -630,19 +636,24 @@ matrix load_tags_paths(char **paths, int n, int k)
     return y;
 }
 
-char **get_labels_custom(char *filename, int *size)
+
+char * * get_labels_custom(char const * const filename, int * const size)
 {
-    list *plist = get_paths(filename);
-    if(size) *size = plist->size;
-    char **labels = (char **)list_to_array(plist);
+    list * plist = get_paths(filename);
+    if (size != 0) {
+        *size = plist->size;
+    }
+    char * * labels = (char * *)list_to_array(plist);
     free_list(plist);
     return labels;
 }
 
-char **get_labels(char *filename)
+
+char * * get_labels(char const * const filename)
 {
     return get_labels_custom(filename, NULL);
 }
+
 
 void free_data(data d)
 {
