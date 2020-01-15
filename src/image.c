@@ -66,7 +66,7 @@ static float get_pixel_extend(image const m, int const x, int const y, int const
 }
 
 
-static void set_pixel(image const m, int const x, int const y, int const c, float const val)
+void set_pixel(image const m, int const x, int const y, int const c, float const val)
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) {
         return;
