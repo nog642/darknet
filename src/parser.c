@@ -2149,10 +2149,10 @@ void load_weights(network* net, char* filename)
 
 
 // load network & force - set batch size
-network* load_network_custom(char* cfg, char* weights, int clear, int batch)
+network * load_network_custom(char * cfg, char * weights, int clear, int batch)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network* net = calloc(1, sizeof(network));
+    network * net = calloc(1, sizeof(network));
     *net = parse_network_cfg_custom(cfg, batch, 1);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);
@@ -2166,10 +2166,10 @@ network* load_network_custom(char* cfg, char* weights, int clear, int batch)
 
 
 // load network & get batch size from cfg-file
-network* load_network(char* cfg, char* weights, int clear)
+network * load_network(char * cfg, char * weights, int clear)
 {
     printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
-    network* net = calloc(1, sizeof(network));
+    network * net = calloc(1, sizeof(network));
     *net = parse_network_cfg(cfg);
     if (weights && weights[0] != 0) {
         load_weights(net, weights);

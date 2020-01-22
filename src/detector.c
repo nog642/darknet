@@ -10,7 +10,7 @@
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
-typedef int (*__compar_fn_t)(const void*, const void*);
+typedef int (*__compar_fn_t)(void const *, void const *);
 #ifdef __USE_GNU
 typedef __compar_fn_t comparison_fn_t;
 #endif
@@ -681,9 +681,9 @@ void validate_detector(char * datacfg, char * cfgfile, char * weightfile, char *
             thr[t] = load_data_in_thread(args);
         }
         for (t = 0; t < nthreads && i + t - nthreads < m; ++t) {
-            char *path = paths[i + t - nthreads];
-            char *id = basecfg(path);
-            float *X = val_resized[t].data;
+            char * path = paths[i + t - nthreads];
+            char * id = basecfg(path);
+            float * X = val_resized[t].data;
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
@@ -691,8 +691,11 @@ void validate_detector(char * datacfg, char * cfgfile, char * weightfile, char *
             int letterbox = args.type == LETTERBOX_DATA;
             detection * dets = get_network_boxes(&net, w, h, thresh, .5, map, 0, &nboxes, letterbox);
             if (nms) {
-                if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
-                else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+                if (l.nms_kind == DEFAULT_NMS) {
+                    do_nms_sort(dets, nboxes, l.classes, nms);
+                } else {
+                    diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+                }
             }
 
             if (coco) {
@@ -1505,8 +1508,8 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
                    int dont_show, int ext_output, int save_labels,
                    char * outfile, int letter_box, int benchmark_layers)
 {
-    list *options = read_data_cfg(datacfg);
-    char *name_list = option_find_str(options, "names", "data/names.list");
+    list * options = read_data_cfg(datacfg);
+    char * name_list = option_find_str(options, "names", "data/names.list");
     int names_size = 0;
     char * * names = get_labels_custom(name_list, &names_size);  //get_labels(name_list);
 
@@ -1529,52 +1532,65 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
     char * json_buf = NULL;
     int json_image_id = 0;
     FILE * json_file = NULL;
-    if (outfile) {
+    if (outfile != NULL) {
         json_file = fopen(outfile, "wb");
-        char *tmp = "[\n";
+        char * tmp = "[\n";
         fwrite(tmp, sizeof(char), strlen(tmp), json_file);
     }
+    float nms = .45;  // 0.4F
     int j;
-    float nms = .45;    // 0.4F
     while (1) {
         if (filename) {
             strncpy(input, filename, 256);
-            if (strlen(input) > 0)
-                if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
-        }
-        else {
+            if (strlen(input) > 0) {
+                if (input[strlen(input) - 1] == '\r') {
+                    input[strlen(input) - 1] = '\0';
+                }
+            }
+        } else {
             printf("Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
-            if (!input) break;
+            if (!input) {
+                break;
+            }
             strtok(input, "\n");
         }
-        //image im;
-        //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
+        // image im;
+        // image sized = load_image_resize(input, net.w, net.h, net.c, &im);
         image im = load_image(input, 0, 0, net.c);
         image sized;
-        if(letter_box) sized = letterbox_image(im, net.w, net.h);
-        else sized = resize_image(im, net.w, net.h);
+        if (letter_box) {
+            sized = letterbox_image(im, net.w, net.h);
+        } else {
+            sized = resize_image(im, net.w, net.h);
+        }
         layer l = net.layers[net.n - 1];
 
-        //box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        //float **probs = calloc(l.w*l.h*l.n, sizeof(float*));
-        //for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)calloc(l.classes, sizeof(float));
+        // box * boxes = calloc(l.w * l.h * l.n, sizeof(box));
+        // float * * probs = calloc(l.w * l.h * l.n, sizeof(float*));
+        // for (j = 0; j < l.w * l.h * l.n; ++j) {
+        //     probs[j] = (float*)calloc(l.classes, sizeof(float));
+        // }
 
-        float *X = sized.data;
+        float * X = sized.data;
 
-        //time= what_time_is_it_now();
+        // time = what_time_is_it_now();
         double time = get_time_point();
         network_predict(net, X);
-        //network_predict_image(&net, im); letterbox = 1;
+        // network_predict_image(&net, im);
+        // letterbox = 1;
         printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
-        //printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
+        // printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now() - time));
 
         int nboxes = 0;
-        detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter_box);
+        detection * dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter_box);
         if (nms) {
-            if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
-            else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+            if (l.nms_kind == DEFAULT_NMS) {
+                do_nms_sort(dets, nboxes, l.classes, nms);
+            } else {
+                diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+            }
         }
         draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
         save_image(im, "predictions");
@@ -1584,7 +1600,7 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
 
         if (outfile) {
             if (json_buf) {
-                char *tmp = ", \n";
+                char * tmp = ", \n";
                 fwrite(tmp, sizeof(char), strlen(tmp), json_file);
             }
             ++json_image_id;
@@ -1595,14 +1611,12 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
         }
 
         // pseudo labeling concept - fast.ai
-        if (save_labels)
-        {
+        if (save_labels) {
             char labelpath[4096];
             replace_image_to_label(input, labelpath);
 
-            FILE* fw = fopen(labelpath, "wb");
-            int i;
-            for (i = 0; i < nboxes; ++i) {
+            FILE * fw = fopen(labelpath, "wb");
+            for (int i = 0; i < nboxes; ++i) {
                 char buff[1024];
                 int class_id = -1;
                 float prob = 0;
@@ -1613,7 +1627,9 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
                     }
                 }
                 if (class_id >= 0) {
-                    sprintf(buff, "%d %2.4f %2.4f %2.4f %2.4f\n", class_id, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h);
+                    sprintf(buff, "%d %2.4f %2.4f %2.4f %2.4f\n", class_id,
+                            dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w,
+                            dets[i].bbox.h);
                     fwrite(buff, sizeof(char), strlen(buff), fw);
                 }
             }
@@ -1629,24 +1645,25 @@ void test_detector(char * datacfg, char * cfgfile, char * weightfile,
             destroy_all_windows_cv();
         }
 
-        if (filename) break;
+        if (filename) {
+            break;
+        }
     }
 
-    if (outfile) {
-        char *tmp = "\n]";
+    if (outfile != NULL) {
+        char * tmp = "\n]";
         fwrite(tmp, sizeof(char), strlen(tmp), json_file);
         fclose(json_file);
     }
 
     // free memory
-    free_ptrs((void**)names, net.layers[net.n - 1].classes);
+    free_ptrs((void * *)names, net.layers[net.n - 1].classes);
     free_list_contents_kvp(options);
     free_list(options);
 
-    int i;
-    const int nsize = 8;
+    int const nsize = 8;
     for (j = 0; j < nsize; ++j) {
-        for (i = 32; i < 127; ++i) {
+        for (int i = 32; i < 127; ++i) {
             free_image(alphabet[j][i]);
         }
         free(alphabet[j]);

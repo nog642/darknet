@@ -20,7 +20,8 @@
 extern int check_mistakes;
 // int windows = 0;
 
-static float const colors[6][3] = {{1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
+static float const colors[6][3] = {{1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0},
+                                   {1, 1, 0}, {1, 0, 0}};
 
 
 float get_color(int const c, int const x, int const max)
@@ -399,8 +400,8 @@ void draw_detections_v3(image im, detection * dets, int num, float thresh,
         printf("%s: %.0f%%", names[best_class],    selected_detections[i].det.prob[best_class] * 100);
         if (ext_output) {
             printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
-                round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
-                round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
+                round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2) * im.w),
+                round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2) * im.h),
                 round(selected_detections[i].det.bbox.w * im.w), round(selected_detections[i].det.bbox.h * im.h));
         } else {
             printf("\n");
@@ -425,7 +426,10 @@ void draw_detections_v3(image im, detection * dets, int num, float thresh,
             //     alphabet = NULL;
             // }
 
-            //printf("%d %s: %.0f%%\n", i, names[selected_detections[i].best_class], prob*100);
+            // printf("%d %s: %.0f%%\n", i, names[selected_detections[i].best_class], prob * 100);
+            // Get the color by multiplying the class ID with a large number,
+            //     then %ing it with the number of colors. This way the same
+            //     class always has the same color box.
             int offset = selected_detections[i].best_class * 123457 % classes;
             float red = get_color(2, offset, classes);
             float green = get_color(1, offset, classes);
@@ -1470,58 +1474,66 @@ void saturate_exposure_image(image im, float sat, float exposure)
     constrain_image(im);
 }
 
+
 float bilinear_interpolate(image im, float x, float y, int c)
 {
-    int ix = (int) floorf(x);
-    int iy = (int) floorf(y);
+    int ix = (int)floorf(x);
+    int iy = (int)floorf(y);
 
     float dx = x - ix;
     float dy = y - iy;
 
-    float val = (1-dy) * (1-dx) * get_pixel_extend(im, ix, iy, c) +
-        dy     * (1-dx) * get_pixel_extend(im, ix, iy+1, c) +
-        (1-dy) *   dx   * get_pixel_extend(im, ix+1, iy, c) +
-        dy     *   dx   * get_pixel_extend(im, ix+1, iy+1, c);
+    float val = (1 - dy) * (1 - dx) * get_pixel_extend(im, ix, iy, c) +
+                dy * (1 - dx) * get_pixel_extend(im, ix, iy + 1, c) +
+                (1 - dy) * dx * get_pixel_extend(im, ix + 1, iy, c) +
+                dy * dx * get_pixel_extend(im, ix + 1, iy + 1, c);
     return val;
 }
 
+
 image resize_image(image im, int w, int h)
 {
-    if (im.w == w && im.h == h) return copy_image(im);
+    if (im.w == w && im.h == h) {
+        return copy_image(im);
+    }
 
     image resized = make_image(w, h, im.c);
     image part = make_image(w, im.h, im.c);
-    int r, c, k;
     float w_scale = (float)(im.w - 1) / (w - 1);
     float h_scale = (float)(im.h - 1) / (h - 1);
-    for(k = 0; k < im.c; ++k){
-        for(r = 0; r < im.h; ++r){
-            for(c = 0; c < w; ++c){
+    int r;
+    int c;
+    int k;
+    for (k = 0; k < im.c; ++k) {
+        for (r = 0; r < im.h; ++r) {
+            for (c = 0; c < w; ++c) {
                 float val = 0;
-                if(c == w-1 || im.w == 1){
-                    val = get_pixel(im, im.w-1, r, k);
+                if (c == w - 1 || im.w == 1) {
+                    val = get_pixel(im, im.w - 1, r, k);
                 } else {
-                    float sx = c*w_scale;
+                    float sx = c * w_scale;
                     int ix = (int) sx;
                     float dx = sx - ix;
-                    val = (1 - dx) * get_pixel(im, ix, r, k) + dx * get_pixel(im, ix+1, r, k);
+                    val = (1 - dx) * get_pixel(im, ix, r, k) + dx * get_pixel(im, ix + 1, r, k);
                 }
                 set_pixel(part, c, r, k, val);
             }
         }
     }
-    for(k = 0; k < im.c; ++k){
-        for(r = 0; r < h; ++r){
-            float sy = r*h_scale;
-            int iy = (int) sy;
+    for (k = 0; k < im.c; ++k) {
+        for (r = 0; r < h; ++r) {
+            float sy = r * h_scale;
+            int iy = (int)sy;
             float dy = sy - iy;
-            for(c = 0; c < w; ++c){
-                float val = (1-dy) * get_pixel(part, c, iy, k);
+            for (c = 0; c < w; ++c) {
+                float val = (1 - dy) * get_pixel(part, c, iy, k);
                 set_pixel(resized, c, r, k, val);
             }
-            if(r == h-1 || im.h == 1) continue;
-            for(c = 0; c < w; ++c){
-                float val = dy * get_pixel(part, c, iy+1, k);
+            if (r == h-1 || im.h == 1) {
+                continue;
+            }
+            for (c = 0; c < w; ++c) {
+                float val = dy * get_pixel(part, c, iy + 1, k);
                 add_pixel(resized, c, r, k, val);
             }
         }
@@ -1535,7 +1547,7 @@ image resize_image(image im, int w, int h)
 void test_resize(char const * const filename)
 {
     image im = load_image(filename, 0,0, 3);
-    float mag = mag_array(im.data, im.w*im.h*im.c);
+    float mag = mag_array(im.data, im.w * im.h * im.c);
     printf("L2 Norm: %f\n", mag);
     image gray = grayscale_image(im);
 
@@ -1549,7 +1561,7 @@ void test_resize(char const * const filename)
     distort_image(c4, .1, .66666, 1.5);
 
 
-    show_image(im,   "Original");
+    show_image(im, "Original");
     show_image(gray, "Gray");
     show_image(c1, "C1");
     show_image(c2, "C2");
@@ -1557,11 +1569,10 @@ void test_resize(char const * const filename)
     show_image(c4, "C4");
 
 #ifdef OPENCV
-    while(1){
+    while (1) {
         image aug = random_augment_image(im, 0, .75, 320, 448, 320);
         show_image(aug, "aug");
         free_image(aug);
-
 
         float exposure = 1.15;
         float saturation = 1.15;
