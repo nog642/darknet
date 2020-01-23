@@ -36,7 +36,7 @@ void draw_detections(image im, int num, float thresh, box * boxes,
                      float * * probs, char * * names, image * * labels,
                      int classes);
 void draw_detections_v3(image im, detection * dets, int num, float thresh,
-                        char * * names, image * * alphabet, int classes,
+                        char const * const * names, image * * alphabet, int classes,
                         int ext_output);
 image image_distance(image a, image b);
 void scale_image(image m, float s);

@@ -613,12 +613,12 @@ matrix load_tags_paths(char **paths, int n, int k)
     matrix y = make_matrix(n, k);
     int i;
     int count = 0;
-    for(i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
         char label[4096];
         find_replace(paths[i], "imgs", "labels", label);
         find_replace(label, "_iconl.jpeg", ".txt", label);
-        FILE *file = fopen(label, "r");
-        if(!file){
+        FILE * file = fopen(label, "r");
+        if (!file) {
             find_replace(label, "labels", "labels2", label);
             file = fopen(label, "r");
             if(!file) continue;

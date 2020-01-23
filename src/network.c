@@ -912,7 +912,9 @@ void free_detections(detection * dets, int n)
 // ]
 //},
 
-char * detection_to_json(detection * dets, int nboxes, int classes, char * * names, long long int frame_id, char * filename)
+char * detection_to_json(detection * dets, int nboxes, int classes,
+                         char const * const * const names,
+                         long long int frame_id, char * filename)
 {
     const float thresh = 0.005;  // function get_network_boxes() has already filtred dets by actual threshold
 

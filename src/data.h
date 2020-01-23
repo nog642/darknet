@@ -12,6 +12,7 @@ extern "C" {
 #endif
 #include "tree.h"
 
+
 static inline float distance_from_edge(int x, int max)
 {
     int dx = (max/2) - x;

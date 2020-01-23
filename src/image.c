@@ -338,7 +338,7 @@ image * * load_alphabet()
 detection_with_class * get_actual_detections(detection * dets, int dets_num,
                                              float thresh,
                                              int * selected_detections_num,
-                                             char * * names)
+                                             char const * const * const names)
 {
     int selected_num = 0;
     detection_with_class * result_arr = calloc(dets_num, sizeof(detection_with_class));
@@ -384,8 +384,8 @@ int compare_by_probs(void const * a_ptr, void const * b_ptr) {
 
 
 void draw_detections_v3(image im, detection * dets, int num, float thresh,
-                        char * * names, image * * alphabet, int classes,
-                        int ext_output)
+                        char const * const * const names, image * * alphabet,
+                        int classes, int ext_output)
 {
     static int frame_id = 0;
     frame_id++;
