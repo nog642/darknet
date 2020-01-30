@@ -10,9 +10,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes, int max_boxes)
+
+layer make_yolo_layer(int batch, int w, int h, int n, int total, int * mask, int classes, int max_boxes)
 {
-    int i;
     layer l = { (LAYER_TYPE)0 };
     l.type = YOLO;
 
@@ -21,28 +21,30 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.batch = batch;
     l.h = h;
     l.w = w;
-    l.c = n*(classes + 4 + 1);
+    l.c = n * (classes + 4 + 1);
     l.out_w = l.w;
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
-    l.cost = (float*)calloc(1, sizeof(float));
-    l.biases = (float*)calloc(total * 2, sizeof(float));
-    if(mask) l.mask = mask;
-    else{
-        l.mask = (int*)calloc(n, sizeof(int));
-        for(i = 0; i < n; ++i){
+    l.cost = (float *)calloc(1, sizeof(float));
+    l.biases = (float *)calloc(total * 2, sizeof(float));
+    int i;
+    if (mask) {
+        l.mask = mask;
+    } else {
+        l.mask = (int *)calloc(n, sizeof(int));
+        for (i = 0; i < n; ++i) {
             l.mask[i] = i;
         }
     }
-    l.bias_updates = (float*)calloc(n * 2, sizeof(float));
-    l.outputs = h*w*n*(classes + 4 + 1);
+    l.bias_updates = (float *)calloc(n * 2, sizeof(float));
+    l.outputs = h * w * n * (classes + 4 + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
-    l.truths = l.max_boxes*(4 + 1);    // 90*(4 + 1);
-    l.delta = (float*)calloc(batch * l.outputs, sizeof(float));
-    l.output = (float*)calloc(batch * l.outputs, sizeof(float));
-    for(i = 0; i < total*2; ++i){
+    l.truths = l.max_boxes * (4 + 1);  // 90 * (4 + 1);
+    l.delta = (float *)calloc(batch * l.outputs, sizeof(float));
+    l.output = (float *)calloc(batch * l.outputs, sizeof(float));
+    for (i = 0; i < total * 2; ++i) {
         l.biases[i] = .5;
     }
 
@@ -51,21 +53,23 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 #ifdef GPU
     l.forward_gpu = forward_yolo_layer_gpu;
     l.backward_gpu = backward_yolo_layer_gpu;
-    l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
-    l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
+    l.output_gpu = cuda_make_array(l.output, batch * l.outputs);
+    l.delta_gpu = cuda_make_array(l.delta, batch * l.outputs);
 
     free(l.output);
-    if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
-    else {
-        cudaGetLastError(); // reset CUDA-error
-        l.output = (float*)calloc(batch * l.outputs, sizeof(float));
+    if (cudaSuccess == cudaHostAlloc(&l.output, batch * l.outputs * sizeof(float), cudaHostRegisterMapped)) {
+        l.output_pinned = 1;
+    } else {
+        cudaGetLastError();  // reset CUDA-error
+        l.output = (float *)calloc(batch * l.outputs, sizeof(float));
     }
 
     free(l.delta);
-    if (cudaSuccess == cudaHostAlloc(&l.delta, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.delta_pinned = 1;
-    else {
-        cudaGetLastError(); // reset CUDA-error
-        l.delta = (float*)calloc(batch * l.outputs, sizeof(float));
+    if (cudaSuccess == cudaHostAlloc(&l.delta, batch * l.outputs * sizeof(float), cudaHostRegisterMapped)) {
+        l.delta_pinned = 1;
+    } else {
+        cudaGetLastError();  // reset CUDA-error
+        l.delta = (float *)calloc(batch * l.outputs, sizeof(float));
     }
 #endif
 
@@ -75,32 +79,37 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     return l;
 }
 
-void resize_yolo_layer(layer *l, int w, int h)
+
+void resize_yolo_layer(layer * l, int w, int h)
 {
     l->w = w;
     l->h = h;
 
-    l->outputs = h*w*l->n*(l->classes + 4 + 1);
+    l->outputs = h * w * l->n * (l->classes + 4 + 1);
     l->inputs = l->outputs;
 
-    if (!l->output_pinned) l->output = (float*)realloc(l->output, l->batch*l->outputs * sizeof(float));
-    if (!l->delta_pinned) l->delta = (float*)realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    if (!l->output_pinned) {
+        l->output = (float *)realloc(l->output, l->batch*l->outputs * sizeof(float));
+    }
+    if (!l->delta_pinned) {
+        l->delta = (float *)realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    }
 
 #ifdef GPU
     if (l->output_pinned) {
         CHECK_CUDA(cudaFreeHost(l->output));
         if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
-            cudaGetLastError(); // reset CUDA-error
-            l->output = (float*)calloc(l->batch * l->outputs, sizeof(float));
+            cudaGetLastError();  // reset CUDA-error
+            l->output = (float *)calloc(l->batch * l->outputs, sizeof(float));
             l->output_pinned = 0;
         }
     }
 
     if (l->delta_pinned) {
         CHECK_CUDA(cudaFreeHost(l->delta));
-        if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
-            cudaGetLastError(); // reset CUDA-error
-            l->delta = (float*)calloc(l->batch * l->outputs, sizeof(float));
+        if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch * l->outputs * sizeof(float), cudaHostRegisterMapped)) {
+            cudaGetLastError();  // reset CUDA-error
+            l->delta = (float *)calloc(l->batch * l->outputs, sizeof(float));
             l->delta_pinned = 0;
         }
     }
@@ -108,12 +117,14 @@ void resize_yolo_layer(layer *l, int w, int h)
     cuda_free(l->delta_gpu);
     cuda_free(l->output_gpu);
 
-    l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
-    l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
+    l->delta_gpu = cuda_make_array(l->delta, l->batch * l->outputs);
+    l->output_gpu = cuda_make_array(l->output, l->batch * l->outputs);
 #endif
 }
 
-box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, int stride)
+
+box get_yolo_box(float * x, float * biases, int n, int index, int i, int j,
+                 int lw, int lh, int w, int h, int stride)
 {
     box b;
     // ln - natural logarithm (base = e)
@@ -121,41 +132,47 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     // y` = t.y * lh - i;   // y = ln(y`/(1-y`))   // y - output of previous conv-layer
                             // w = ln(t.w * net.w / anchors_w); // w - output of previous conv-layer
                             // h = ln(t.h * net.h / anchors_h); // h - output of previous conv-layer
-    b.x = (i + x[index + 0*stride]) / lw;
-    b.y = (j + x[index + 1*stride]) / lh;
-    b.w = exp(x[index + 2*stride]) * biases[2*n]   / w;
-    b.h = exp(x[index + 3*stride]) * biases[2*n+1] / h;
+    b.x = (i + x[index + 0 * stride]) / lw;
+    b.y = (j + x[index + 1 * stride]) / lh;
+    b.w = exp(x[index + 2 * stride]) * biases[2 * n]   / w;
+    b.h = exp(x[index + 3 * stride]) * biases[2 * n + 1] / h;
     return b;
 }
 
-ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i, int j, int lw, int lh, int w, int h, float *delta, float scale, int stride, float iou_normalizer, IOU_LOSS iou_loss, int accumulate)
+
+ious delta_yolo_box(box truth, float * x, float * biases, int n, int index,
+                    int i, int j, int lw, int lh, int w, int h, float * delta,
+                    float scale, int stride, float iou_normalizer,
+                    IOU_LOSS iou_loss, int accumulate)
 {
     ious all_ious = { 0 };
     // i - step in layer width
     // j - step in layer height
-    //  Returns a box in absolute coordinates
+    // Returns a box in absolute coordinates
     box pred = get_yolo_box(x, biases, n, index, i, j, lw, lh, w, h, stride);
     all_ious.iou = box_iou(pred, truth);
     all_ious.giou = box_giou(pred, truth);
     all_ious.diou = box_diou(pred, truth);
     all_ious.ciou = box_ciou(pred, truth);
     // avoid nan in dx_box_iou
-    if (pred.w == 0) { pred.w = 1.0; }
-    if (pred.h == 0) { pred.h = 1.0; }
-    if (iou_loss == MSE)    // old loss
-    {
-        float tx = (truth.x*lw - i);
-        float ty = (truth.y*lh - j);
-        float tw = log(truth.w*w / biases[2 * n]);
-        float th = log(truth.h*h / biases[2 * n + 1]);
+    if (pred.w == 0) {
+      pred.w = 1.0;
+    }
+    if (pred.h == 0) {
+      pred.h = 1.0;
+    }
+    if (iou_loss == MSE) {  // old loss
+        float tx = truth.x * lw - i;
+        float ty = truth.y * lh - j;
+        float tw = log(truth.w * w / biases[2 * n]);
+        float th = log(truth.h * h / biases[2 * n + 1]);
 
         // accumulate delta
         delta[index + 0 * stride] += scale * (tx - x[index + 0 * stride]) * iou_normalizer;
         delta[index + 1 * stride] += scale * (ty - x[index + 1 * stride]) * iou_normalizer;
         delta[index + 2 * stride] += scale * (tw - x[index + 2 * stride]) * iou_normalizer;
         delta[index + 3 * stride] += scale * (th - x[index + 3 * stride]) * iou_normalizer;
-    }
-    else {
+    } else {
         // https://github.com/generalized-iou/g-darknet
         // https://arxiv.org/abs/1902.09630v2
         // https://giou.stanford.edu/
@@ -200,13 +217,16 @@ ious delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i,
     return all_ious;
 }
 
-void averages_yolo_deltas(int class_index, int box_index, int stride, int classes, float *delta)
+
+void averages_yolo_deltas(int class_index, int box_index, int stride,
+                          int classes, float * delta)
 {
 
     int classes_in_one_box = 0;
-    int c;
-    for (c = 0; c < classes; ++c) {
-        if (delta[class_index + stride*c] > 0) classes_in_one_box++;
+    for (int c = 0; c < classes; ++c) {
+        if (delta[class_index + stride*c] > 0) {
+            classes_in_one_box++;
+        }
     }
 
     if (classes_in_one_box > 0) {
@@ -217,41 +237,53 @@ void averages_yolo_deltas(int class_index, int box_index, int stride, int classe
     }
 }
 
-void delta_yolo_class(float *output, float *delta, int index, int class_id, int classes, int stride, float *avg_cat, int focal_loss, float label_smooth_eps, float *classes_multipliers)
+
+void delta_yolo_class(float * output, float * delta, int index, int class_id,
+                      int classes, int stride, float * avg_cat, int focal_loss,
+                      float label_smooth_eps, float * classes_multipliers)
 {
     int n;
-    if (delta[index + stride*class_id]){
-        delta[index + stride*class_id] = (1 - label_smooth_eps) - output[index + stride*class_id];
-        if (classes_multipliers) delta[index + stride*class_id] *= classes_multipliers[class_id];
-        if(avg_cat) *avg_cat += output[index + stride*class_id];
+    if (delta[index + stride * class_id]) {
+        delta[index + stride * class_id] = (1 - label_smooth_eps) - output[index + stride * class_id];
+        if (classes_multipliers) {
+          delta[index + stride * class_id] *= classes_multipliers[class_id];
+        }
+        if (avg_cat) {
+            *avg_cat += output[index + stride * class_id];
+        }
         return;
     }
     // Focal loss
     if (focal_loss) {
         // Focal Loss
         float alpha = 0.5;    // 0.25 or 0.5
-        //float gamma = 2;    // hardcoded in many places of the grad-formula
+        // float gamma = 2;    // hardcoded in many places of the grad-formula
 
         int ti = index + stride*class_id;
         float pt = output[ti] + 0.000000000000001F;
         // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiItKDEteCkqKDIqeCpsb2coeCkreC0xKSIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMH1d
-        float grad = -(1 - pt) * (2 * pt*logf(pt) + pt - 1);    // http://blog.csdn.net/linmingan/article/details/77885832
-        //float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);    // https://github.com/unsky/focal-loss
+        float grad = -(1 - pt) * (2 * pt * logf(pt) + pt - 1);  // http://blog.csdn.net/linmingan/article/details/77885832
+        // float grad = (1 - pt) * (2 * pt*logf(pt) + pt - 1);  // https://github.com/unsky/focal-loss
 
         for (n = 0; n < classes; ++n) {
-            delta[index + stride*n] = (((n == class_id) ? 1 : 0) - output[index + stride*n]);
+            delta[index + stride * n] = (((n == class_id) ? 1 : 0) - output[index + stride * n]);
 
-            delta[index + stride*n] *= alpha*grad;
+            delta[index + stride * n] *= alpha * grad;
 
-            if (n == class_id) *avg_cat += output[index + stride*n];
+            if (n == class_id) {
+                *avg_cat += output[index + stride * n];
+            }
         }
-    }
-    else {
+    } else {
         // default
         for (n = 0; n < classes; ++n) {
-            delta[index + stride*n] = ((n == class_id) ? (1 - label_smooth_eps) : (0 + label_smooth_eps/classes)) - output[index + stride*n];
-            if (classes_multipliers && n == class_id) delta[index + stride*class_id] *= classes_multipliers[class_id];
-            if (n == class_id && avg_cat) *avg_cat += output[index + stride*n];
+            delta[index + stride * n] = ((n == class_id) ? (1 - label_smooth_eps) : (0 + label_smooth_eps/classes)) - output[index + stride*n];
+            if (classes_multipliers && n == class_id) {
+                delta[index + stride*class_id] *= classes_multipliers[class_id];
+            }
+            if (n == class_id && avg_cat) {
+                *avg_cat += output[index + stride*n];
+            }
         }
     }
 }

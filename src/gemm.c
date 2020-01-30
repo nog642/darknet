@@ -15,9 +15,9 @@
 #include <omp.h>
 #endif
 
-#define TILE_M 4 // 4 ops
-#define TILE_N 16 // AVX2 = 2 ops * 8 floats
-#define TILE_K 16 // loop
+#define TILE_M 4  // 4 ops
+#define TILE_N 16  // AVX2 = 2 ops * 8 floats
+#define TILE_K 16  // loop
 #ifdef __cplusplus
 #define PUT_IN_REGISTER
 #else
@@ -1431,8 +1431,7 @@ void im2col_cpu_custom_transpose(float* data_im,
             }
         }
 
-    }
-    else {
+    } else {
         #pragma omp parallel for
         for (c = 0; c < channels_col; ++c) {
             int h, w;
@@ -1466,8 +1465,7 @@ void im2col_cpu_custom(float* data_im,
     const int channels_col = channels * ksize * ksize;
 
     // optimized version
-    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
-    {
+    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2()) {
         #pragma omp parallel for
         for (c = 0; c < channels_col; ++c) {
             int h, w;
@@ -1539,8 +1537,7 @@ void im2col_cpu_custom(float* data_im,
             }
         }
 
-    }
-    else {
+    } else {
         //printf("\n Error: is no non-optimized version \n");
         im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
     }
@@ -1558,8 +1555,7 @@ void im2col_cpu_custom_align(float* data_im,
     const int channels_col = channels * ksize * ksize;
 
     // optimized version
-    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
-    {
+    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2()) {
         int new_ldb = bit_align;
 
         #pragma omp parallel for
@@ -1634,8 +1630,7 @@ void im2col_cpu_custom_align(float* data_im,
             }
         }
 
-    }
-    else {
+    } else {
         printf("\n Error: is no non-optimized version \n");
         //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
         // float_to_bit(b, t_input, src_size);
@@ -1656,8 +1651,7 @@ void im2col_cpu_custom_bin(float* data_im,
     const int channels_col = channels * ksize * ksize;
 
     // optimized version
-    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2())
-    {
+    if (height_col == height && width_col == width && stride == 1 && pad == 1 && is_fma_avx2()) {
         __m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
         __m256 float_zero256 = _mm256_set1_ps(0.00);
 
@@ -1803,6 +1797,7 @@ void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a)
     }
 }
 
+
 void float_to_bit(float *src, unsigned char *dst, size_t size)
 {
     size_t dst_size = size / 8 + 1;
@@ -1812,8 +1807,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     //__m256i all256_sing1 = _mm256_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
     __m256 float_zero256 = _mm256_set1_ps(0.0);
 
-    for (i = 0; i < size; i+=8)
-    {
+    for (i = 0; i < size; i+=8) {
         //__m256i src256 = _mm256_loadu_si256((__m256i *)(&src[i]));
         //__m256i result256 = _mm256_and_si256(src256, all256_sing1); // check sign in 8 x 32-bit floats
         //uint32_t mask = _mm256_movemask_ps(_mm256_castsi256_ps(result256)); // (val >= 0) ? 0 : 1
@@ -1827,6 +1821,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     }
 }
 
+
 static inline void transpose4x4_SSE(float *A, float *B, const int lda, const int ldb)
 {
     __m128 row1 = _mm_loadu_ps(&A[0 * lda]);
@@ -1839,6 +1834,7 @@ static inline void transpose4x4_SSE(float *A, float *B, const int lda, const int
     _mm_storeu_ps(&B[2 * ldb], row3);
     _mm_storeu_ps(&B[3 * ldb], row4);
 }
+
 
 void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
@@ -1859,8 +1855,7 @@ void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
                             transpose4x4_SSE(&A[i2*lda + j2], &B[j2*ldb + i2], lda, ldb);
                         }
                     }
-                }
-                else {
+                } else {
                     for (i2 = i; i2 < max_i2; ++i2) {
                         for (j2 = j; j2 < m; ++j2) {
                             B[j2*ldb + i2] = A[i2*lda + j2];
@@ -1868,8 +1863,7 @@ void transpose_block_SSE4x4(float *A, float *B, const int n, const int m,
                     }
                 }
             }
-        }
-        else {
+        } else {
             for (i2 = i; i2 < n; ++i2) {
                 for (j2 = 0; j2 < m; ++j2) {
                     B[j2*ldb + i2] = A[i2*lda + j2];
@@ -2124,20 +2118,20 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
         int j, k;
         float mean_val = mean_arr[i];
 
-        for (j = 0; j < N; ++j) { // out_h*out_w - one channel output size [169 - 173056]
+        for (j = 0; j < N; ++j) {  // out_h * out_w - one channel output size [169 - 173056]
             int count = 0;
 
-            for (k = 0; k < K; k += 64) {   // l.size*l.size*l.c - one filter size [27 - 9216]
+            for (k = 0; k < K; k += 64) {  // l.size * l.size * l.c - one filter size [27 - 9216]
                 uint64_t a_bit64 = *((uint64_t *)(A + (i*lda + k) / 8));
                 uint64_t b_bit64 = *((uint64_t *)(B + (j*ldb + k) / 8));
                 uint64_t c_bit64 = xnor_int64(a_bit64, b_bit64);
 
                 int tmp_count = popcnt_64(c_bit64);
 
-                if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
+                if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));  // remove extra bits
                 count += tmp_count;
-                //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                // binary_int64_printf(c_bit64);
+                // printf(", count = %d \n\n", tmp_count);
             }
 
             C[i*ldc + j] = (2 * count - K) * mean_val;
@@ -2145,16 +2139,17 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
     }
 }
 
-void im2col_cpu_custom_transpose(float* data_im,
-    int channels, int height, int width,
-    int ksize, int stride, int pad, float* data_col, int ldb_align)
+
+void im2col_cpu_custom_transpose(float* data_im, int channels, int height, int width,
+                                 int ksize, int stride, int pad, float* data_col, int ldb_align)
 {
     printf("\n im2col_cpu_custom_transpose() isn't implemented without AVX \n");
 }
 
+
 //From Berkeley Vision's Caffe!
 //https://github.com/BVLC/caffe/blob/master/LICENSE
-void im2col_cpu_custom(float* data_im,
+void im2col_cpu_custom(float * data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col)
 {
@@ -2167,8 +2162,7 @@ void im2col_cpu_custom(float* data_im,
     const int channels_col = channels * ksize * ksize;
 
     // optimized version
-    if (height_col == height && width_col == width && stride == 1 && pad == 1)
-    {
+    if (height_col == height && width_col == width && stride == 1 && pad == 1) {
         #pragma omp parallel for
         for (c = 0; c < channels_col; ++c) {
             int h, w;
@@ -2191,7 +2185,7 @@ void im2col_cpu_custom(float* data_im,
 
                     data_col[col_index] = data_im[im_col + width*(im_row + height*c_im)];
                 }
-    }
+            }
 
             {
                 w = 0;
@@ -2248,7 +2242,7 @@ void im2col_cpu_custom(float* data_im,
 
 //From Berkeley Vision's Caffe!
 //https://github.com/BVLC/caffe/blob/master/LICENSE
-void im2col_cpu_custom_bin(float* data_im,
+void im2col_cpu_custom_bin(float * data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col, int bit_align)
 {
@@ -2264,7 +2258,8 @@ void im2col_cpu_custom_bin(float* data_im,
 
         #pragma omp parallel for
         for (c = 0; c < channels_col; ++c) {
-            int h, w;
+            int h;
+            int w;
             int w_offset = c % ksize;
             int h_offset = (c / ksize) % ksize;
             int c_im = c / ksize / ksize;
@@ -2541,6 +2536,7 @@ void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
     }
 }
 
+
 void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, float *output,
     int w, int h, int c, int n, int size, int pad, int new_lda, float *mean_arr)
 {
@@ -2683,13 +2679,13 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         #pragma omp parallel for
         for (t = 0; t < M; ++t) {
             if (!TA && !TB)
-                gemm_nn(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+                gemm_nn(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t * ldc, ldc);
             else if (TA && !TB)
-                gemm_tn(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+                gemm_tn(1, N, K, ALPHA, A + t, lda, B, ldb, C + t * ldc, ldc);
             else if (!TA && TB)
-                gemm_nt(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+                gemm_nt(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t * ldc, ldc);
             else
-                gemm_tt(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+                gemm_tt(1, N, K, ALPHA, A + t, lda, B, ldb, C + t * ldc, ldc);
         }
     }
 }
@@ -2698,42 +2694,58 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #include <math.h>
 
-void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
-        float *A_gpu, int lda,
-        float *B_gpu, int ldb,
-        float BETA,
-        float *C_gpu, int ldc)
+
+void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA, float * A_gpu,
+                int lda, float * B_gpu, int ldb, float BETA, float * C_gpu,
+                int ldc)
 {
     cublasHandle_t handle = blas_handle();
     cudaError_t stream_status = (cudaError_t)cublasSetStream(handle, get_cuda_stream());
     CHECK_CUDA(stream_status);
-    cudaError_t status = (cudaError_t)cublasSgemm(handle, (TB ? CUBLAS_OP_T : CUBLAS_OP_N),
-            (TA ? CUBLAS_OP_T : CUBLAS_OP_N), N, M, K, &ALPHA, B_gpu, ldb, A_gpu, lda, &BETA, C_gpu, ldc);
+    cudaError_t status = (cudaError_t)cublasSgemm(
+        handle,
+        (TB ? CUBLAS_OP_T : CUBLAS_OP_N),
+        (TA ? CUBLAS_OP_T : CUBLAS_OP_N),
+        N,
+        M,
+        K,
+        &ALPHA,
+        B_gpu,
+        ldb,
+        A_gpu,
+        lda,
+        &BETA,
+        C_gpu,
+        ldc
+    );
     CHECK_CUDA(status);
 }
 
+
 void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
-        float *A, int lda,
-        float *B, int ldb,
+        float * A, int lda,
+        float * B, int ldb,
         float BETA,
-        float *C, int ldc)
+        float * C, int ldc)
 {
-    float *A_gpu = cuda_make_array(A, (TA ? lda*K:lda*M));
-    float *B_gpu = cuda_make_array(B, (TB ? ldb*N : ldb*K));
-    float *C_gpu = cuda_make_array(C, ldc*M);
+    float * A_gpu = cuda_make_array(A, (TA ? lda * K : lda * M));
+    float * B_gpu = cuda_make_array(B, (TB ? ldb * N : ldb * K));
+    float * C_gpu = cuda_make_array(C, ldc * M);
 
     gemm_ongpu(TA, TB, M, N, K, ALPHA, A_gpu, lda, B_gpu, ldb, BETA, C_gpu, ldc);
 
-    cuda_pull_array(C_gpu, C, ldc*M);
+    cuda_pull_array(C_gpu, C, ldc * M);
     cuda_free(A_gpu);
     cuda_free(B_gpu);
     cuda_free(C_gpu);
 }
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 
 void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
 {
@@ -2758,6 +2770,7 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
     free(b);
     free(c);
 }
+
 
 void time_ongpu(int TA, int TB, int m, int k, int n)
 {
@@ -2797,7 +2810,7 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
 void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
 {
     srand(0);
-    float *a;
+    float * a;
     if(!TA) a = random_matrix(m,k);
     else a = random_matrix(k,m);
     int lda = (!TA)?k:m;
@@ -2806,8 +2819,8 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
     else b = random_matrix(n,k);
     int ldb = (!TB)?n:k;
 
-    float *c = random_matrix(m,n);
-    float *c_gpu = random_matrix(m,n);
+    float * c = random_matrix(m, n);
+    float * c_gpu = random_matrix(m, n);
     memset(c, 0, m*n*sizeof(float));
     memset(c_gpu, 0, m*n*sizeof(float));
     int i;
@@ -2820,44 +2833,43 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
     //printf("\n\nCPU\n");
     //pm(m, n, c);
     double sse = 0;
-    for(i = 0; i < m*n; ++i) {
+    for(i = 0; i < m * n; ++i) {
         //printf("%f %f\n", c[i], c_gpu[i]);
-        sse += pow(c[i]-c_gpu[i], 2);
+        sse += pow(c[i] - c_gpu[i], 2);
     }
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n",m,k,k,n, TA, TB, sse/(m*n));
+    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n", m, k, k, n, TA, TB, sse / (m * n));
     free(a);
     free(b);
     free(c);
     free(c_gpu);
 }
 
+
 int test_gpu_blas()
 {
-    /*
-       test_gpu_accuracy(0,0,10,576,75);
-
-       test_gpu_accuracy(0,0,17,10,10);
-       test_gpu_accuracy(1,0,17,10,10);
-       test_gpu_accuracy(0,1,17,10,10);
-       test_gpu_accuracy(1,1,17,10,10);
-
-       test_gpu_accuracy(0,0,1000,10,100);
-       test_gpu_accuracy(1,0,1000,10,100);
-       test_gpu_accuracy(0,1,1000,10,100);
-       test_gpu_accuracy(1,1,1000,10,100);
-
-       test_gpu_accuracy(0,0,10,10,10);
-
-       time_ongpu(0,0,64,2916,363);
-       time_ongpu(0,0,64,2916,363);
-       time_ongpu(0,0,64,2916,363);
-       time_ongpu(0,0,192,729,1600);
-       time_ongpu(0,0,384,196,1728);
-       time_ongpu(0,0,256,196,3456);
-       time_ongpu(0,0,256,196,2304);
-       time_ongpu(0,0,128,4096,12544);
-       time_ongpu(0,0,128,4096,4096);
-     */
+    // test_gpu_accuracy(0,0,10,576,75);
+    //
+    // test_gpu_accuracy(0,0,17,10,10);
+    // test_gpu_accuracy(1,0,17,10,10);
+    // test_gpu_accuracy(0,1,17,10,10);
+    // test_gpu_accuracy(1,1,17,10,10);
+    //
+    // test_gpu_accuracy(0,0,1000,10,100);
+    // test_gpu_accuracy(1,0,1000,10,100);
+    // test_gpu_accuracy(0,1,1000,10,100);
+    // test_gpu_accuracy(1,1,1000,10,100);
+    //
+    // test_gpu_accuracy(0,0,10,10,10);
+    //
+    // time_ongpu(0,0,64,2916,363);
+    // time_ongpu(0,0,64,2916,363);
+    // time_ongpu(0,0,64,2916,363);
+    // time_ongpu(0,0,192,729,1600);
+    // time_ongpu(0,0,384,196,1728);
+    // time_ongpu(0,0,256,196,3456);
+    // time_ongpu(0,0,256,196,2304);
+    // time_ongpu(0,0,128,4096,12544);
+    // time_ongpu(0,0,128,4096,4096);
     time_ongpu(0,0,64,75,12544);
     time_ongpu(0,0,64,75,12544);
     time_ongpu(0,0,64,75,12544);

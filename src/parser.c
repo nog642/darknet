@@ -449,9 +449,9 @@ int * parse_yolo_mask(char const * a, int * const num)
 }
 
 
-float *get_classes_multipliers(char *cpc, const int classes)
+float * get_classes_multipliers(char *cpc, const int classes)
 {
-    float *classes_multipliers = NULL;
+    float * classes_multipliers = NULL;
     if (cpc) {
         int classes_counters = classes;
         int *counters_per_class = parse_yolo_mask(cpc, &classes_counters);
@@ -489,7 +489,7 @@ layer parse_yolo(list * options, size_params params)
     }
     // assert(l.outputs == params.inputs);
 
-    char *cpc = option_find_str(options, "counters_per_class", 0);
+    char * cpc = option_find_str(options, "counters_per_class", 0);
     l.classes_multipliers = get_classes_multipliers(cpc, classes);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
@@ -553,7 +553,7 @@ layer parse_yolo(list * options, size_params params)
 }
 
 
-int* parse_gaussian_yolo_mask(char const * a, int * const num)  // Gaussian_YOLOv3
+int * parse_gaussian_yolo_mask(char const * a, int * const num)  // Gaussian_YOLOv3
 {
     if (a == NULL) {
         return NULL;
@@ -576,7 +576,7 @@ int* parse_gaussian_yolo_mask(char const * a, int * const num)  // Gaussian_YOLO
 }
 
 
-layer parse_gaussian_yolo(list* options, size_params params) // Gaussian_YOLOv3
+layer parse_gaussian_yolo(list * options, size_params params) // Gaussian_YOLOv3
 {
     int classes = option_find_int(options, "classes", 20);
     int max_boxes = option_find_int_quiet(options, "max", 90);
@@ -610,7 +610,7 @@ layer parse_gaussian_yolo(list* options, size_params params) // Gaussian_YOLOv3
     else l.iou_loss = IOU;
 
     l.beta_nms = option_find_float_quiet(options, "beta_nms", 0.6);
-    char *nms_kind = option_find_str_quiet(options, "nms_kind", "default");
+    char * nms_kind = option_find_str_quiet(options, "nms_kind", "default");
     if (strcmp(nms_kind, "default") == 0) l.nms_kind = DEFAULT_NMS;
     else {
         if (strcmp(nms_kind, "greedynms") == 0) l.nms_kind = GREEDY_NMS;
@@ -719,7 +719,7 @@ layer parse_region(list* options, size_params params)
 }
 
 
-detection_layer parse_detection(list* options, size_params params)
+detection_layer parse_detection(list * options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
@@ -970,7 +970,7 @@ layer parse_shortcut(list* options, size_params params, network net)
         layers_output_gpu[i] = params.net.layers[layers[i]].output_gpu;
         layers_delta_gpu[i] = params.net.layers[layers[i]].delta_gpu;
     }
-#endif// GPU
+#endif  // GPU
 
     layer s = make_shortcut_layer(params.batch, n, layers, sizes, params.w, params.h, params.c, layers_output, layers_delta,
         layers_output_gpu, layers_delta_gpu, weights_type, weights_normalizion, activation, params.train);
@@ -1036,9 +1036,9 @@ layer parse_sam(list* options, size_params params, network net)
 }
 
 
-layer parse_activation(list* options, size_params params)
+layer parse_activation(list * options, size_params params)
 {
-    char* activation_s = option_find_str(options, "activation", "linear");
+    char * activation_s = option_find_str(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);
 
     layer l = make_activation_layer(params.batch, params.inputs, activation);
@@ -1054,7 +1054,7 @@ layer parse_activation(list* options, size_params params)
 }
 
 
-layer parse_upsample(list* options, size_params params, network net)
+layer parse_upsample(list * options, size_params params, network net)
 {
 
     int stride = option_find_int(options, "stride", 2);
@@ -1302,7 +1302,7 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
 {
     list * sections = read_cfg(filename);
     node * n = sections->front;
-    if (!n) {
+    if (n == NULL) {
         error("Config file has no sections");
     }
     network net = make_network(sections->size - 1);
@@ -1315,8 +1315,8 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
         params.train = 1;  // allocates memory for Detection & Training
     }
 
-    section* s = n->val;
-    list* options = s->options;
+    section * s = n->val;
+    list * options = s->options;
     if (!is_network(s)) {
         error("First section must be [net] or [network]");
     }
@@ -1361,10 +1361,10 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
     int count = 0;
     free_section(s);
     fprintf(stderr, "   layer   filters  size/strd(dil)      input                output\n");
-    while (n) {
+    while (n != NULL) {
         params.index = count;
         fprintf(stderr, "%4d ", count);
-        s = (section*)n->val;
+        s = (section *)n->val;
         options = s->options;
         layer l = { (LAYER_TYPE)0 };
         LAYER_TYPE lt = string_to_layer_type(s->type);
@@ -1470,17 +1470,16 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
 
 #ifdef GPU
         // futher GPU-memory optimization: net.optimized_memory == 2
-        if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
-        {
+        if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT) {
             l.optimized_memory = net.optimized_memory;
             if (l.output_gpu) {
                 cuda_free(l.output_gpu);
-                //l.output_gpu = cuda_make_array_pinned(l.output, l.batch*l.outputs); // l.steps
-                l.output_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+                // l.output_gpu = cuda_make_array_pinned(l.output, l.batch * l.outputs);  // l.steps
+                l.output_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch * l.outputs);  // l.steps
             }
             if (l.activation_input_gpu) {
                 cuda_free(l.activation_input_gpu);
-                l.activation_input_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+                l.activation_input_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch * l.outputs);  // l.steps
             }
 
             if (l.x_gpu) {
@@ -1492,13 +1491,13 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
             if (net.optimized_memory >= 3 && l.type != DROPOUT) {
                 if (l.delta_gpu) {
                     cuda_free(l.delta_gpu);
-                    //l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
-                    //printf("\n\n PINNED DELTA GPU = %d \n", l.batch*l.outputs);
+                    // l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch * l.outputs);  // l.steps
+                    // printf("\n\n PINNED DELTA GPU = %d \n", l.batch * l.outputs);
                 }
             }
 
             if (l.type == CONVOLUTIONAL) {
-                set_specified_workspace_limit(&l, net.workspace_size_limit);   // workspace size limit 1 GB
+                set_specified_workspace_limit(&l, net.workspace_size_limit);  // workspace size limit 1 GB
             }
         }
 #endif // GPU
@@ -1509,7 +1508,7 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         option_unused(options);
-        net.layers[count] = l;
+        net.layers[count] = l;  // assign layer to net.layers
         if (l.workspace_size > workspace_size) {
             workspace_size = l.workspace_size;
         }
@@ -1542,8 +1541,7 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
     free_list(sections);
 
 #ifdef GPU
-    if (net.optimized_memory && params.train)
-    {
+    if (net.optimized_memory && params.train) {
         int k;
         for (k = 0; k < net.n; ++k) {
             layer l = net.layers[k];
@@ -1598,20 +1596,20 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
         // pre-allocate memory for inference on Tensor Cores (fp16)
         if (net.cudnn_half) {
             *net.max_input16_size = max_inputs;
-            CHECK_CUDA(cudaMalloc((void**)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
+            CHECK_CUDA(cudaMalloc((void * *)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
             *net.max_output16_size = max_outputs;
-            CHECK_CUDA(cudaMalloc((void**)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
+            CHECK_CUDA(cudaMalloc((void * *)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
         }
         if (workspace_size) {
             fprintf(stderr, " Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         } else {
-            net.workspace = (float*)calloc(1, workspace_size);
+            net.workspace = (float *)calloc(1, workspace_size);
         }
     }
 #else
         if (workspace_size) {
-            net.workspace = (float*)calloc(1, workspace_size);
+            net.workspace = (float *)calloc(1, workspace_size);
         }
 #endif
 
@@ -1620,6 +1618,7 @@ network parse_network_cfg_custom(char const * const filename, int batch, int tim
         printf("\n Warning: width=%d and height=%d in cfg-file must be divisible by 32 for default networks Yolo v1/v2/v3!!! \n\n",
                net.w, net.h);
     }
+    printf("net.layers[net.n - 1].classes (at the end of parse_network_cfg_custom): %d\n", net.layers[net.n - 1].classes);
     return net;
 }
 
@@ -1633,7 +1632,7 @@ list * read_cfg(char const * const filename)
     char * line;
     int nu = 0;
     list * sections = make_list();
-    section* current = 0;
+    section * current = NULL;
     while ((line = fgetl(file)) != 0) {
         nu++;
         strip(line);
@@ -2157,7 +2156,7 @@ network * load_network_custom(char * cfg, char * weights, int clear, int batch)
     if (weights && weights[0] != 0) {
         load_weights(net, weights);
     }
-    //fuse_conv_batchnorm(*net);
+    // fuse_conv_batchnorm(*net);
     if (clear) {
         *net->seen = 0;
     }
