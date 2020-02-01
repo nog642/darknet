@@ -255,21 +255,21 @@ char * get_layer_string(LAYER_TYPE const a)
 }
 
 
-network make_network(const int n)
+network make_network(int const n)
 {
     return (network){
         .n=n,
         .layers=calloc(n, sizeof(layer)),
-        .seen=calloc(1, sizeof(uint64_t))
+        .seen=calloc(1, sizeof(uint64_t)),
 
 #ifdef GPU
-        .input_gpu=calloc(1, sizeof(float*));
-        .truth_gpu=calloc(1, sizeof(float*));
+        .input_gpu=calloc(1, sizeof(float *)),
+        .truth_gpu=calloc(1, sizeof(float *)),
 
-        .input16_gpu=calloc(1, sizeof(float*));
-        .output16_gpu=calloc(1, sizeof(float*));
-        .max_input16_size=calloc(1, sizeof(size_t));
-        .max_output16_size=calloc(1, sizeof(size_t));
+        .input16_gpu=calloc(1, sizeof(float *)),
+        .output16_gpu=calloc(1, sizeof(float *)),
+        .max_input16_size=calloc(1, sizeof(size_t)),
+        .max_output16_size=calloc(1, sizeof(size_t))
 #endif
 
     };
